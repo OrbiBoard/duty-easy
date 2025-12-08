@@ -8,13 +8,14 @@
     <link rel="stylesheet" href="../../../renderer/settings.css" />
     <style>
       :root { --panel: rgba(255,255,255,0.06); }
-      body { margin: 0; }
+      html, body { height: 100%; }
+      body { margin: 0; overflow: auto; }
       .section { padding: 16px; background: transparent !important; border: none !important; }
       .editor { margin-top: 8px; }
       .row { display: flex; align-items: center; gap: 12px; margin: 6px 0; }
       input { width: 100%; box-sizing: border-box; padding: 6px 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.06); color: var(--fg); }
       .actions { display: flex; gap: 8px; margin-top: 8px; }
-      .btn { padding: 6px 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.06); color: var(--fg); cursor: pointer; }
+      .btn { padding: 6px 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.06); color: var(--fg); cursor: pointer; white-space: nowrap; }
       .btn.secondary { background: rgba(255,255,255,0.08); }
       .btn.danger { background: rgba(255, 100, 100, 0.2); border-color: rgba(255, 100, 100, 0.4); }
       .tag { display: inline-flex; align-items: center; gap: 6px; padding: 2px 8px; border-radius: 999px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); margin: 4px; }

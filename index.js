@@ -34,8 +34,11 @@ function ensureDefaults() {
       currentGroupIndex: 0,
       weekdayMap: { 0: 0, 1: 0, 2: 1, 3: 1, 4: 2, 5: 2, 6: 0 },
       mainMode: 'group',
-      singleRoleIndices: {}
+      singleRoleIndices: {},
+      dynamicIndices: {},
+      dynamicActiveRole: {}
     },
+    dynamicRoles: [],
     singleRoles: ['清洁', '黑板', '值日生'],
     singleRoleLists: {},
     singleRoleConditions: {},
@@ -61,6 +64,22 @@ function advanceOnStartup() {
       const idx = map[dow(today)];
       gi = Number.isFinite(idx) ? idx : 0;
     }
+    const dynRoles = Array.isArray(cfg.dynamicRoles) ? cfg.dynamicRoles : [];
+    const dynActive = typeof rule.dynamicActiveRole === 'object' && rule.dynamicActiveRole ? rule.dynamicActiveRole : {};
+    const dynIdx = typeof rule.dynamicIndices === 'object' && rule.dynamicIndices ? { ...rule.dynamicIndices } : {};
+    const giKey = String(gi);
+    const perIdx = typeof dynIdx[giKey] === 'object' && dynIdx[giKey] ? { ...dynIdx[giKey] } : {};
+    const groupObj = groups[gi] || { roles: {} };
+    dynRoles.forEach((rDyn) => {
+      const perGroupActive = typeof dynActive[giKey] === 'object' && dynActive[giKey] ? dynActive[giKey] : {};
+      const activeRole = String(perGroupActive[rDyn] || rDyn);
+      const arr = Array.isArray(groupObj.roles?.[activeRole]) ? groupObj.roles[activeRole] : [];
+      if (!arr.length) return;
+      const base = Number.isFinite(perIdx[rDyn]) ? perIdx[rDyn] : 0;
+      perIdx[rDyn] = (base + 1) % arr.length;
+    });
+    dynIdx[giKey] = perIdx;
+    nextRule = { ...nextRule, currentGroupIndex: gi, dynamicIndices: dynIdx };
     const roles = Array.isArray(cfg.singleRoles) ? cfg.singleRoles : (Array.isArray(cfg.roles) ? cfg.roles : []);
     const indices = typeof rule.singleRoleIndices === 'object' && rule.singleRoleIndices ? { ...rule.singleRoleIndices } : {};
     roles.forEach(r => {
@@ -69,8 +88,8 @@ function advanceOnStartup() {
       indices[r] = arr.length ? (cur + 1) % arr.length : 0;
     });
     nextRule = { ...nextRule, currentGroupIndex: gi, singleRoleIndices: indices };
-    store.set('duty.easy', 'rule', nextRule);
-    store.set('duty.easy', 'lastStartupDate', today);
+    store.set('duty-easy', 'rule', nextRule);
+    store.set('duty-easy', 'lastStartupDate', today);
   }
 }
 
@@ -79,12 +98,16 @@ function predict(nextDays) {
   const cfg = store.getAll('duty-easy');
   const groups = Array.isArray(cfg.groups) ? cfg.groups : [];
   const rolesAll = Array.isArray(cfg.roles) ? cfg.roles : [];
+  const dynRoles = Array.isArray(cfg.dynamicRoles) ? cfg.dynamicRoles : [];
   const singleRoles = Array.isArray(cfg.singleRoles) ? cfg.singleRoles : rolesAll;
   const rule = cfg.rule || {};
   const baseDate = new Date(todayISO());
   const out = [];
   function weekNumberISO(dateStr){ const d=new Date(dateStr); const dd=new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())); const day=(dd.getUTCDay()+6)%7; dd.setUTCDate(dd.getUTCDate()-day+3); const firstThursday=new Date(Date.UTC(dd.getUTCFullYear(),0,4)); const diff=dd-firstThursday; return 1+Math.round(diff/604800000); }
   function matchCond(dateStr, cond){ if(!cond||typeof cond!=='object') return true; const wk=weekNumberISO(dateStr); const isOdd=(wk%2)===1; if(cond.mode==='odd' && !isOdd) return false; if(cond.mode==='even' && isOdd) return false; const d=new Date(dateStr).getDay(); const d17=d===0?7:d; const arr=Array.isArray(cond.weekdays)?cond.weekdays:[]; if(arr.length){ return arr.includes(d17); } return true; }
+  const dynActive = typeof rule.dynamicActiveRole === 'object' && rule.dynamicActiveRole ? rule.dynamicActiveRole : {};
+  const dynIdx = typeof rule.dynamicIndices === 'object' && rule.dynamicIndices ? rule.dynamicIndices : {};
+  const norm = (v,len)=>{ const m=((v%len)+len)%len; return m };
   for (let i = 0; i < nextDays; i++) {
     const d = new Date(baseDate.getTime() + i * 24 * 60 * 60 * 1000);
     const yyyy = d.getFullYear();
@@ -101,7 +124,29 @@ function predict(nextDays) {
     }
     const group = groups[gi] || { name: '', roles: {} };
     const groupMembers = {};
-    rolesAll.forEach((r) => { groupMembers[r] = Array.isArray(group.roles?.[r]) ? group.roles[r] : []; });
+    rolesAll.forEach((rDyn) => {
+      const isDyn = dynRoles.includes(rDyn);
+      if (!isDyn) {
+        groupMembers[rDyn] = Array.isArray(group.roles?.[rDyn]) ? group.roles[rDyn] : [];
+        return;
+      }
+      const giKey = String(gi);
+      const perGroup = typeof dynActive[giKey] === 'object' && dynActive[giKey] ? dynActive[giKey] : {};
+      const activeRole = String(perGroup[rDyn] || rDyn);
+      const arr = Array.isArray(group.roles?.[activeRole]) ? group.roles[activeRole] : [];
+      if (!arr.length) { groupMembers[rDyn] = []; return; }
+      const perIdx = typeof dynIdx[giKey] === 'object' && dynIdx[giKey] ? dynIdx[giKey] : {};
+      const base = Number.isFinite(perIdx[rDyn]) ? perIdx[rDyn] : 0;
+      if ((rule.mode || 'list') === 'list') {
+        const G = groups.length || 1;
+        const shift = norm((gi - (Number.isFinite(rule.currentGroupIndex)?rule.currentGroupIndex:0)), G);
+        const occurs = i >= shift ? Math.floor((i - shift) / G) + 1 : 0;
+        const pickIdx = norm(base + occurs, arr.length);
+        groupMembers[rDyn] = [arr[pickIdx]];
+      } else {
+        groupMembers[rDyn] = [arr[base]];
+      }
+    });
     const lists = typeof cfg.singleRoleLists === 'object' && cfg.singleRoleLists ? cfg.singleRoleLists : {};
     const indices = typeof rule.singleRoleIndices === 'object' && rule.singleRoleIndices ? rule.singleRoleIndices : {};
     const conds = typeof cfg.singleRoleConditions === 'object' && cfg.singleRoleConditions ? cfg.singleRoleConditions : {};
@@ -207,6 +252,7 @@ const functions = {
       if (Array.isArray(payload.roles)) store.set('duty-easy', 'roles', payload.roles);
       if (Array.isArray(payload.groups)) store.set('duty-easy', 'groups', payload.groups);
       if (payload.rule && typeof payload.rule === 'object') store.set('duty-easy', 'rule', payload.rule);
+      if (Array.isArray(payload.dynamicRoles)) store.set('duty-easy', 'dynamicRoles', payload.dynamicRoles);
       if (payload.singleRoleLists && typeof payload.singleRoleLists === 'object') store.set('duty-easy', 'singleRoleLists', payload.singleRoleLists);
       if (Array.isArray(payload.singleRoles)) store.set('duty-easy', 'singleRoles', payload.singleRoles);
       if (payload.singleRoleConditions && typeof payload.singleRoleConditions === 'object') store.set('duty-easy', 'singleRoleConditions', payload.singleRoleConditions);
