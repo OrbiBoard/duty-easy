@@ -36,7 +36,8 @@ function ensureDefaults() {
       mainMode: 'group',
       singleRoleIndices: {},
       dynamicIndices: {},
-      dynamicActiveRole: {}
+      dynamicActiveRole: {},
+      dynamicDailyCount: { '值日生': 2 }
     },
     dynamicRoles: [],
     singleRoles: ['清洁', '黑板', '值日生'],
@@ -135,17 +136,7 @@ function predict(nextDays) {
       const activeRole = String(perGroup[rDyn] || rDyn);
       const arr = Array.isArray(group.roles?.[activeRole]) ? group.roles[activeRole] : [];
       if (!arr.length) { groupMembers[rDyn] = []; return; }
-      const perIdx = typeof dynIdx[giKey] === 'object' && dynIdx[giKey] ? dynIdx[giKey] : {};
-      const base = Number.isFinite(perIdx[rDyn]) ? perIdx[rDyn] : 0;
-      if ((rule.mode || 'list') === 'list') {
-        const G = groups.length || 1;
-        const shift = norm((gi - (Number.isFinite(rule.currentGroupIndex)?rule.currentGroupIndex:0)), G);
-        const occurs = i >= shift ? Math.floor((i - shift) / G) + 1 : 0;
-        const pickIdx = norm(base + occurs, arr.length);
-        groupMembers[rDyn] = [arr[pickIdx]];
-      } else {
-        groupMembers[rDyn] = [arr[base]];
-      }
+      groupMembers[rDyn] = arr.slice();
     });
     const lists = typeof cfg.singleRoleLists === 'object' && cfg.singleRoleLists ? cfg.singleRoleLists : {};
     const indices = typeof rule.singleRoleIndices === 'object' && rule.singleRoleIndices ? rule.singleRoleIndices : {};

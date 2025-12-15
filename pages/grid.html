@@ -31,7 +31,7 @@
   </head>
   <body>
     <div class="section">
-      <div class="section-title"><i class="ri-team-line"></i> 组别分工表</div>
+      <div class="section-title"><i class="ri-team-line"></i> 组别分工表 </div>
       <div class="actions">
         <button id="openRoles" class="btn secondary"><i class="ri-list-check"></i> 分工列表</button>
         <button id="openGroups" class="btn secondary"><i class="ri-group-line"></i> 分组列表</button>
@@ -73,7 +73,7 @@
         (cfg.groups||[]).forEach((g,gi)=>{ const tr=el('tr'); const tdGroup=el('td'); tdGroup.textContent=g.name||''; tr.appendChild(tdGroup);
           tdGroup.className='group-name'+(gi===curIdx?' active':''); tdGroup.addEventListener('click',()=>{ setActiveGroup(gi) });
           (cfg.roles||[]).forEach(r=>{ const td=el('td'); const cell=el('div','cell'); const arr=Array.isArray(g.roles?.[r])?g.roles[r]:[]; const isDyn=Array.isArray(cfg.dynamicRoles)?cfg.dynamicRoles.includes(r):false;
-            if(isDyn){ const activeName=getDynActive(gi,r); const options=(cfg.roles||[]).filter(roleName=>!(Array.isArray(cfg.dynamicRoles)&&cfg.dynamicRoles.includes(roleName))); if(options.length===0){ const empty=el('span','badge'); empty.textContent='无可选择分工'; cell.appendChild(empty) } else { options.forEach(roleName=>{ const chip=el('span','chip'); chip.textContent=roleName||''; if(String(roleName||'')===String(activeName||'')) chip.classList.add('active'); chip.addEventListener('click',()=>{ setDynActive(gi,r,roleName) }); cell.appendChild(chip) }) } const badge=el('span','badge'); badge.innerHTML='<i class="ri-repeat-2-line"></i> 已启用动态分工'; cell.appendChild(badge); }
+            if(isDyn){ const activeName=getDynActive(gi,r); const options=(cfg.roles||[]).filter(roleName=>roleName!=='新分工' && !(Array.isArray(cfg.dynamicRoles)&&cfg.dynamicRoles.includes(roleName))); if(options.length===0){ const empty=el('span','badge'); empty.textContent='无可选择分工'; cell.appendChild(empty) } else { options.forEach(roleName=>{ const chip=el('span','chip'); chip.textContent=roleName||''; if(String(roleName||'')===String(activeName||'')) chip.classList.add('active'); chip.addEventListener('click',()=>{ setDynActive(gi,r,roleName) }); cell.appendChild(chip) }) } const badge=el('span','badge'); badge.innerHTML='<i class="ri-repeat-2-line"></i> 已启用动态分工'; cell.appendChild(badge); }
             else { arr.forEach((n,ni)=>{ const t=el('span','tag'); t.textContent=n||''; const rm=document.createElement('button'); rm.className='btn danger'; rm.innerHTML='<i class="ri-close-line"></i>'; rm.addEventListener('click',(e)=>{ e.stopPropagation(); const a=Array.isArray(cfg.groups?.[gi]?.roles?.[r])?cfg.groups[gi].roles[r]:[]; a.splice(ni,1); render() }); t.appendChild(rm); cell.appendChild(t) }); const addBtn=el('button','btn secondary'); addBtn.innerHTML='<i class="ri-add-line"></i> 添加'; addBtn.addEventListener('click',()=>{ if(hasDupRoles()){ showDupHint(); return } currentPick={gi,r}; openStudentsPicker(); }); cell.appendChild(addBtn); }
             td.appendChild(cell); tr.appendChild(td)
           }); tbody.appendChild(tr)
