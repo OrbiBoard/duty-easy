@@ -45,7 +45,7 @@
       let channel = '';
       let caller = '';
       function el(t,c){const e=document.createElement(t);if(c)e.className=c;return e}
-      function dowStr(s){ try{ const d=new Date(s); const n=d.getDay(); return ['周日','周一','周二','周三','周四','周五','周六'][n] }catch{ return '' } }
+      function dowStr(s){ try{ const d=new Date(s); const n=d.getDay(); return ['周日','周一','周二','周三','周四','周五','周六'][n] }catch (e) { return '' } }
       function todayISO(){ const d=new Date(); const y=d.getFullYear(); const m=String(d.getMonth()+1).padStart(2,'0'); const dd=String(d.getDate()).padStart(2,'0'); return `${y}-${m}-${dd}` }
       async function load(){
         let r=null; if(window.lowbarAPI?.pluginCall){ r=await window.lowbarAPI.pluginCall(caller,'getPreview'); r=r?.result||r; }
@@ -65,7 +65,7 @@
           wrap.appendChild(card);
         });
       }
-      (function(){ try{const u=new URL(window.location.href); channel=String(u.searchParams.get('channel')||''); caller=String(u.searchParams.get('caller')||'');}catch{}
+      (function(){ try{const u=new URL(window.location.href); channel=String(u.searchParams.get('channel')||''); caller=String(u.searchParams.get('caller')||'');}catch (e) {}
         if(window.lowbarAPI){ window.lowbarAPI.subscribe?.(channel); window.lowbarAPI.onEvent?.((n,p)=>{ if(n!==channel)return; if(p?.type==='update'){ if(p.target==='refresh') load(); }}); }
         load();
       })();

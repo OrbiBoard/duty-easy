@@ -105,7 +105,7 @@
             await window.pluginAPI.configEnsureDefaults('duty.easy', {});
             const all = await window.pluginAPI.configGetAll('duty.easy'); cfg = all || {};
           }
-        } catch {}
+        } catch (e) {}
         if (!Array.isArray(cfg.roles)) cfg.roles = [];
         if (!Array.isArray(cfg.groups)) cfg.groups = [];
         if (!Array.isArray(cfg.rotationLists)) cfg.rotationLists = [];
@@ -178,9 +178,9 @@
               rm.addEventListener('click', (e) => { e.stopPropagation(); const a = Array.isArray(cfg.groups?.[gi]?.roles?.[r]) ? cfg.groups[gi].roles[r] : []; a.splice(ni,1); renderGrid(); });
               t.appendChild(rm);
               t.addEventListener('dragstart', (e) => {
-                try { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('application/json', JSON.stringify({ type:'name', from:{ gi, r, ni }, name: n })); e.dataTransfer.setData('text/plain', JSON.stringify({ type:'name', from:{ gi, r, ni }, name: n })); } catch {}
+                try { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('application/json', JSON.stringify({ type:'name', from:{ gi, r, ni }, name: n })); e.dataTransfer.setData('text/plain', JSON.stringify({ type:'name', from:{ gi, r, ni }, name: n })); } catch (e) {}
               });
-              t.addEventListener('dragover', (e) => { e.preventDefault(); try { e.dataTransfer.dropEffect = 'move'; } catch {} });
+              t.addEventListener('dragover', (e) => { e.preventDefault(); try { e.dataTransfer.dropEffect = 'move'; } catch (e) {} });
               t.addEventListener('drop', (e) => {
                 e.preventDefault();
                 const raw = e.dataTransfer.getData('application/json') || e.dataTransfer.getData('text/plain');
@@ -197,7 +197,7 @@
               });
               cell.appendChild(t);
             });
-            cell.addEventListener('dragover', (e) => { e.preventDefault(); try { e.dataTransfer.dropEffect = 'move'; } catch {} cell.classList.add('drag-over'); });
+            cell.addEventListener('dragover', (e) => { e.preventDefault(); try { e.dataTransfer.dropEffect = 'move'; } catch (e) {} cell.classList.add('drag-over'); });
             cell.addEventListener('dragleave', () => { cell.classList.remove('drag-over'); });
             cell.addEventListener('drop', (e) => {
               e.preventDefault(); cell.classList.remove('drag-over');
@@ -219,7 +219,7 @@
                 url.searchParams.set('caller', 'profiles.students');
                 window.lowbarAPI?.emitEvent?.(channel, { type:'update', target:'floatingUrl', value: url.href });
                 window.__dutyGridPick__ = { gi, r };
-              } catch {}
+              } catch (e) {}
             });
             cell.appendChild(addBtn);
             td.appendChild(cell); tr.appendChild(td);
@@ -243,7 +243,7 @@
         });
       }
 
-      function safeParse(t){ try { return JSON.parse(String(t||'')); } catch { return null; } }
+      function safeParse(t){ try { return JSON.parse(String(t||'')); } catch (e) { return null; } }
 
       async function collectAndSave() {
         const rolesArea = document.getElementById('roles');
@@ -293,7 +293,7 @@
             await window.pluginAPI.configSet('duty.easy', 'rotationLists', cfg.rotationLists);
             const verify = await window.pluginAPI.configGetAll('duty.easy'); cfg = verify || cfg;
           }
-        } catch {}
+        } catch (e) {}
       }
 
       async function init() {
@@ -301,7 +301,7 @@
           const u = new URL(window.location.href);
           channel = String(u.searchParams.get('channel') || '');
           caller = String(u.searchParams.get('caller') || '');
-        } catch {}
+        } catch (e) {}
         if (window.lowbarAPI) {
           window.lowbarAPI.subscribe?.(channel);
           window.lowbarAPI.onEvent?.(async (name, payload) => {
@@ -321,7 +321,7 @@
                   renderGrid();
                   window.lowbarAPI?.emitEvent?.(channel, { type:'update', target:'floatingUrl', value: null });
                 }
-              } catch {}
+              } catch (e) {}
             }
           });
         }

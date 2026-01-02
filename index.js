@@ -7,7 +7,7 @@ let pluginApi = null;
 
 function fileUrl(p) { return url.pathToFileURL(p).href; }
 
-function emitUpdate(channel, target, value) { try { pluginApi.emit(channel, { type: 'update', target, value }); } catch {} }
+function emitUpdate(channel, target, value) { try { pluginApi.emit(channel, { type: 'update', target, value }); } catch (e) {} }
 
 const EVENT_CHANNEL = 'duty.easy.channel';
 let state = { mode: 'preview', paths: {} };
@@ -45,7 +45,7 @@ function ensureDefaults() {
     singleRoleConditions: {},
     lastStartupDate: ''
   };
-  try { store.ensureDefaults('duty-easy', defaults); } catch {}
+  try { store.ensureDefaults('duty-easy', defaults); } catch (e) {}
 }
 
 function advanceOnStartup() {

@@ -64,11 +64,11 @@
             await window.pluginAPI.configEnsureDefaults('duty.easy',{});
             const all=await window.pluginAPI.configGetAll('duty.easy'); cfg=all||{};
           }
-        } catch {}
+        } catch (e) {}
         if(!Array.isArray(cfg.roles)) cfg.roles=[]; if(!Array.isArray(cfg.groups)) cfg.groups=[]; if(!Array.isArray(cfg.dynamicRoles)) cfg.dynamicRoles=[]; if(typeof cfg.rule!=='object'||!cfg.rule) cfg.rule={}; render()
       }
-      function getDynActive(gi, role){ try{ const d=cfg.rule?.dynamicActiveRole||{}; const giKey=String(gi); const per=d[giKey]||{}; const v=String(per[role]||''); return v }catch{ return '' } }
-      async function setDynActive(gi, role, roleName){ try{ const res= await window.lowbarAPI?.pluginCall?.(caller,'getConfig'); const r=res?.result||res; const cur=r?.config||{}; const rule=cur.rule||{}; const dyn= typeof rule.dynamicActiveRole==='object'&&rule.dynamicActiveRole?{...rule.dynamicActiveRole}:{ }; const giKey=String(gi); const per= typeof dyn[giKey]==='object'&&dyn[giKey]?{...dyn[giKey]}:{}; per[role]=roleName; dyn[giKey]=per; await window.lowbarAPI?.pluginCall?.(caller,'saveConfig',[{ rule: { ...rule, dynamicActiveRole: dyn } }]); const verify=await window.lowbarAPI?.pluginCall?.(caller,'getConfig'); const rr=verify?.result||verify; cfg=rr?.config||cfg; try{ if(channel) window.lowbarAPI.emitEvent?.(channel,{ type:'update', target:'refresh', value:true }) }catch{} render() }catch{} }
+      function getDynActive(gi, role){ try{ const d=cfg.rule?.dynamicActiveRole||{}; const giKey=String(gi); const per=d[giKey]||{}; const v=String(per[role]||''); return v }catch (e) { return '' } }
+      async function setDynActive(gi, role, roleName){ try{ const res= await window.lowbarAPI?.pluginCall?.(caller,'getConfig'); const r=res?.result||res; const cur=r?.config||{}; const rule=cur.rule||{}; const dyn= typeof rule.dynamicActiveRole==='object'&&rule.dynamicActiveRole?{...rule.dynamicActiveRole}:{ }; const giKey=String(gi); const per= typeof dyn[giKey]==='object'&&dyn[giKey]?{...dyn[giKey]}:{}; per[role]=roleName; dyn[giKey]=per; await window.lowbarAPI?.pluginCall?.(caller,'saveConfig',[{ rule: { ...rule, dynamicActiveRole: dyn } }]); const verify=await window.lowbarAPI?.pluginCall?.(caller,'getConfig'); const rr=verify?.result||verify; cfg=rr?.config||cfg; try{ if(channel) window.lowbarAPI.emitEvent?.(channel,{ type:'update', target:'refresh', value:true }) }catch (e) {} render() }catch (e) {} }
       function render(){ const thead=document.getElementById('thead'); const tbody=document.getElementById('tbody'); thead.innerHTML=''; tbody.innerHTML=''; const trh=el('tr'); const th0=el('th'); const curIdx=Number.isFinite(cfg.rule?.currentGroupIndex)?cfg.rule.currentGroupIndex:0; const curName=(cfg.groups||[])[curIdx]?.name||''; th0.innerHTML=`组别 ${curName?`<span class="badge">当前：${curName}</span>`:''}`; trh.appendChild(th0); (cfg.roles||[]).forEach(r=>{ const th=el('th'); th.textContent=r||''; trh.appendChild(th) }); thead.appendChild(trh);
         (cfg.groups||[]).forEach((g,gi)=>{ const tr=el('tr'); const tdGroup=el('td'); tdGroup.textContent=g.name||''; tr.appendChild(tdGroup);
           tdGroup.className='group-name'+(gi===curIdx?' active':''); tdGroup.addEventListener('click',()=>{ setActiveGroup(gi) });
@@ -82,11 +82,11 @@
       function hasDupRoles(){ const names=(cfg.roles||[]).map(s=>String(s||'').trim()).filter(Boolean); return names.some((n,idx)=>names.indexOf(n)!==idx) }
       function showDupHint(){ let hint=document.getElementById('grid-dup-hint'); if(!hint){ hint=document.createElement('div'); hint.id='grid-dup-hint'; hint.className='hint'; hint.textContent='存在重复分工名称，请在“分工列表”修改为唯一后再添加'; document.querySelector('.section').appendChild(hint) }
       }
-      function openStudentsPicker(){ try{ const url=new URL('../../../plugins/profiles-students/index.html', window.location.href); url.searchParams.set('channel', studentsChannel); url.searchParams.set('caller','profiles.students'); url.searchParams.set('mode','pick'); window.lowbarAPI?.emitEvent?.(channel, { type:'update', target:'floatingUrl', value: url.href }); }catch{} }
-      function safeParse(t){ try{ return JSON.parse(String(t||'')) }catch{ return null } }
-      function openRolesList(){ try{ const url=new URL('./roles-list.html', window.location.href); url.searchParams.set('channel', channel); url.searchParams.set('caller','duty.easy'); window.lowbarAPI?.emitEvent?.(channel,{ type:'update', target:'floatingUrl', value: url.href }); }catch{} }
-      function openGroupsList(){ try{ const url=new URL('./groups-list.html', window.location.href); url.searchParams.set('channel', channel); url.searchParams.set('caller','duty.easy'); window.lowbarAPI?.emitEvent?.(channel,{ type:'update', target:'floatingUrl', value: url.href }); }catch{} }
-      function openRules(){ try{ const url=new URL('./rules.html', window.location.href); url.searchParams.set('channel', channel); url.searchParams.set('caller','duty.easy'); window.lowbarAPI?.emitEvent?.(channel,{ type:'update', target:'floatingUrl', value: url.href }); }catch{} }
+      function openStudentsPicker(){ try{ const url=new URL('../../../plugins/profiles-students/index.html', window.location.href); url.searchParams.set('channel', studentsChannel); url.searchParams.set('caller','profiles.students'); url.searchParams.set('mode','pick'); window.lowbarAPI?.emitEvent?.(channel, { type:'update', target:'floatingUrl', value: url.href }); }catch (e) {} }
+      function safeParse(t){ try{ return JSON.parse(String(t||'')) }catch (e) { return null } }
+      function openRolesList(){ try{ const url=new URL('./roles-list.html', window.location.href); url.searchParams.set('channel', channel); url.searchParams.set('caller','duty.easy'); window.lowbarAPI?.emitEvent?.(channel,{ type:'update', target:'floatingUrl', value: url.href }); }catch (e) {} }
+      function openGroupsList(){ try{ const url=new URL('./groups-list.html', window.location.href); url.searchParams.set('channel', channel); url.searchParams.set('caller','duty.easy'); window.lowbarAPI?.emitEvent?.(channel,{ type:'update', target:'floatingUrl', value: url.href }); }catch (e) {} }
+      function openRules(){ try{ const url=new URL('./rules.html', window.location.href); url.searchParams.set('channel', channel); url.searchParams.set('caller','duty.easy'); window.lowbarAPI?.emitEvent?.(channel,{ type:'update', target:'floatingUrl', value: url.href }); }catch (e) {} }
       async function save(){ try {
         if (window.lowbarAPI?.pluginCall) {
           await window.lowbarAPI.pluginCall(caller,'saveConfig',[{ groups: cfg.groups }]);
@@ -106,7 +106,7 @@
           await window.pluginAPI.configSet('duty.easy','groups',cfg.groups);
           const verify=await window.pluginAPI.configGetAll('duty.easy'); cfg=verify||cfg;
         }
-      } catch {} }
+      } catch (e) {} }
       async function setActiveGroup(gi){ try{
         const nextRule = { ...(cfg.rule||{}), currentGroupIndex: gi };
         if (window.lowbarAPI?.pluginCall) {
@@ -121,11 +121,11 @@
           await window.pluginAPI.configSet('duty.easy','rule', nextRule);
           const verify=await window.pluginAPI.configGetAll('duty.easy'); cfg=verify||cfg;
         }
-        try{ if(channel) window.lowbarAPI.emitEvent?.(channel,{ type:'update', target:'refresh', value:true }) }catch{}
+        try{ if(channel) window.lowbarAPI.emitEvent?.(channel,{ type:'update', target:'refresh', value:true }) }catch (e) {}
         render()
-      }catch{} }
-      (function(){ try{const u=new URL(window.location.href); channel=String(u.searchParams.get('channel')||''); caller=String(u.searchParams.get('caller')||'')}catch{}
-        if(window.lowbarAPI){ if(channel) window.lowbarAPI.subscribe?.(channel); window.lowbarAPI.subscribe?.(studentsChannel); window.lowbarAPI.onEvent?.(async (n,p)=>{ if(p?.type==='update'){ if(n===channel && p.target==='duty.save'){ await save(); await load() } if(n===channel && p.target==='refresh'){ await load() } } if(n===studentsChannel){ const name=String(p?.name||'').trim(); if(p?.type==='pick' && name && currentPick){ if(hasDupRoles()){ currentPick=null; showDupHint(); return } const arr=Array.isArray(cfg.groups?.[currentPick.gi]?.roles?.[currentPick.r])?cfg.groups[currentPick.gi].roles[currentPick.r]:(cfg.groups[currentPick.gi].roles[currentPick.r]=[]); arr.push(name); currentPick=null; render(); try{ window.lowbarAPI.emitEvent?.(channel,{ type:'update', target:'floatingUrl', value:null }); }catch{} } } }); }
+      }catch (e) {} }
+      (function(){ try{const u=new URL(window.location.href); channel=String(u.searchParams.get('channel')||''); caller=String(u.searchParams.get('caller')||'')}catch (e) {}
+        if(window.lowbarAPI){ if(channel) window.lowbarAPI.subscribe?.(channel); window.lowbarAPI.subscribe?.(studentsChannel); window.lowbarAPI.onEvent?.(async (n,p)=>{ if(p?.type==='update'){ if(n===channel && p.target==='duty.save'){ await save(); await load() } if(n===channel && p.target==='refresh'){ await load() } } if(n===studentsChannel){ const name=String(p?.name||'').trim(); if(p?.type==='pick' && name && currentPick){ if(hasDupRoles()){ currentPick=null; showDupHint(); return } const arr=Array.isArray(cfg.groups?.[currentPick.gi]?.roles?.[currentPick.r])?cfg.groups[currentPick.gi].roles[currentPick.r]:(cfg.groups[currentPick.gi].roles[currentPick.r]=[]); arr.push(name); currentPick=null; render(); try{ window.lowbarAPI.emitEvent?.(channel,{ type:'update', target:'floatingUrl', value:null }); }catch (e) {} } } }); }
         load(); document.getElementById('openRoles').addEventListener('click',openRolesList); document.getElementById('openGroups').addEventListener('click',openGroupsList); document.getElementById('openRules').addEventListener('click',openRules)
       })();
     </script>
