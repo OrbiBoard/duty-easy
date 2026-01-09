@@ -52,17 +52,17 @@
           if (window.lowbarAPI?.pluginCall) {
             const res=await window.lowbarAPI.pluginCall(caller,'getConfig'); const r=res?.result||res; cfg=r?.config||{};
           } else if (window.lowbarAPI?.configEnsureDefaults) {
-            await window.lowbarAPI.configEnsureDefaults('duty.easy',{
+            await window.lowbarAPI.configEnsureDefaults('duty-easy',{
               roles: ['清洁','黑板','值日生'],
               groups: [
                 { name: '一组', roles: { '清洁': [], '黑板': [], '值日生': [] } },
                 { name: '二组', roles: { '清洁': [], '黑板': [], '值日生': [] } }
               ]
             });
-            const all=await window.lowbarAPI.configGetAll('duty.easy'); cfg=all||{};
+            const all=await window.lowbarAPI.configGetAll('duty-easy'); cfg=all||{};
           } else if (window.pluginAPI?.configEnsureDefaults) {
-            await window.pluginAPI.configEnsureDefaults('duty.easy',{});
-            const all=await window.pluginAPI.configGetAll('duty.easy'); cfg=all||{};
+            await window.pluginAPI.configEnsureDefaults('duty-easy',{});
+            const all=await window.pluginAPI.configGetAll('duty-easy'); cfg=all||{};
           }
         } catch (e) {}
         if(!Array.isArray(cfg.roles)) cfg.roles=[]; if(!Array.isArray(cfg.groups)) cfg.groups=[]; if(!Array.isArray(cfg.dynamicRoles)) cfg.dynamicRoles=[]; if(typeof cfg.rule!=='object'||!cfg.rule) cfg.rule={}; render()
@@ -82,46 +82,50 @@
       function hasDupRoles(){ const names=(cfg.roles||[]).map(s=>String(s||'').trim()).filter(Boolean); return names.some((n,idx)=>names.indexOf(n)!==idx) }
       function showDupHint(){ let hint=document.getElementById('grid-dup-hint'); if(!hint){ hint=document.createElement('div'); hint.id='grid-dup-hint'; hint.className='hint'; hint.textContent='存在重复分工名称，请在“分工列表”修改为唯一后再添加'; document.querySelector('.section').appendChild(hint) }
       }
-      function openStudentsPicker(){ try{ const url=new URL('../../../plugins/profiles-students/index.html', window.location.href); url.searchParams.set('channel', studentsChannel); url.searchParams.set('caller','profiles.students'); url.searchParams.set('mode','pick'); window.lowbarAPI?.emitEvent?.(channel, { type:'update', target:'floatingUrl', value: url.href }); }catch (e) {} }
-      function safeParse(t){ try{ return JSON.parse(String(t||'')) }catch (e) { return null } }
-      function openRolesList(){ try{ const url=new URL('./roles-list.html', window.location.href); url.searchParams.set('channel', channel); url.searchParams.set('caller','duty.easy'); window.lowbarAPI?.emitEvent?.(channel,{ type:'update', target:'floatingUrl', value: url.href }); }catch (e) {} }
-      function openGroupsList(){ try{ const url=new URL('./groups-list.html', window.location.href); url.searchParams.set('channel', channel); url.searchParams.set('caller','duty.easy'); window.lowbarAPI?.emitEvent?.(channel,{ type:'update', target:'floatingUrl', value: url.href }); }catch (e) {} }
-      function openRules(){ try{ const url=new URL('./rules.html', window.location.href); url.searchParams.set('channel', channel); url.searchParams.set('caller','duty.easy'); window.lowbarAPI?.emitEvent?.(channel,{ type:'update', target:'floatingUrl', value: url.href }); }catch (e) {} }
+      function openStudentsPicker(){ try{ const url=new URL('../../../plugins/profiles-students/index.html', window.location.href); url.searchParams.set('channel', studentsChannel); url.searchParams.set('caller','profiles-students'); url.searchParams.set('mode','pick'); window.lowbarAPI?.emitEvent?.(channel, { type:'update', target:'floatingUrl', value: url.href }); }catch (e) {} }
+      function openRolesList(){ try{ const url=new URL('./roles-list.html', window.location.href); url.searchParams.set('channel', channel); url.searchParams.set('caller',caller); window.lowbarAPI?.emitEvent?.(channel,{ type:'update', target:'floatingUrl', value: url.href }); }catch (e) {} }
+      function openGroupsList(){ try{ const url=new URL('./groups-list.html', window.location.href); url.searchParams.set('channel', channel); url.searchParams.set('caller',caller); window.lowbarAPI?.emitEvent?.(channel,{ type:'update', target:'floatingUrl', value: url.href }); }catch (e) {} }
+      function openRules(){ try{ const url=new URL('./rules.html', window.location.href); url.searchParams.set('channel', channel); url.searchParams.set('caller',caller); window.lowbarAPI?.emitEvent?.(channel,{ type:'update', target:'floatingUrl', value: url.href }); }catch (e) {} }
       async function save(){ try {
         if (window.lowbarAPI?.pluginCall) {
           await window.lowbarAPI.pluginCall(caller,'saveConfig',[{ groups: cfg.groups }]);
           const res=await window.lowbarAPI.pluginCall(caller,'getConfig'); const r=res?.result||res; cfg=r?.config||cfg;
         } else if (window.lowbarAPI?.configEnsureDefaults) {
-          await window.lowbarAPI.configEnsureDefaults('duty.easy',{
+          await window.lowbarAPI.configEnsureDefaults('duty-easy',{
             roles: ['清洁','黑板','值日生'],
             groups: [
               { name: '一组', roles: { '清洁': [], '黑板': [], '值日生': [] } },
               { name: '二组', roles: { '清洁': [], '黑板': [], '值日生': [] } }
             ]
           });
-          await window.lowbarAPI.configSet('duty.easy','groups',cfg.groups);
-          const verify=await window.lowbarAPI.configGetAll('duty.easy'); cfg=verify||cfg;
+          await window.lowbarAPI.configSet('duty-easy','groups',cfg.groups);
+          const verify=await window.lowbarAPI.configGetAll('duty-easy'); cfg=verify||cfg;
         } else if (window.pluginAPI?.configEnsureDefaults) {
-          await window.pluginAPI.configEnsureDefaults('duty.easy',{});
-          await window.pluginAPI.configSet('duty.easy','groups',cfg.groups);
-          const verify=await window.pluginAPI.configGetAll('duty.easy'); cfg=verify||cfg;
+          await window.pluginAPI.configEnsureDefaults('duty-easy',{});
+          await window.pluginAPI.configSet('duty-easy','groups',cfg.groups);
+          const verify=await window.pluginAPI.configGetAll('duty-easy'); cfg=verify||cfg;
         }
       } catch (e) {} }
+      async function applyNextRule(nextRule) {
+        try {
+          if (window.lowbarAPI?.pluginCall) {
+            await window.lowbarAPI.pluginCall('duty-easy','saveConfig',[{ rule: nextRule }]);
+            const res=await window.lowbarAPI.pluginCall('duty-easy','getConfig'); const r=res?.result||res; cfg=r?.config||cfg;
+          } else if (window.lowbarAPI?.configEnsureDefaults) {
+            await window.lowbarAPI.configEnsureDefaults('duty-easy',{});
+            await window.lowbarAPI.configSet('duty-easy','rule', nextRule);
+            const verify=await window.lowbarAPI.configGetAll('duty-easy'); cfg=verify||cfg;
+          } else if (window.pluginAPI?.configEnsureDefaults) {
+            await window.pluginAPI.configEnsureDefaults('duty-easy',{});
+            await window.pluginAPI.configSet('duty-easy','rule', nextRule);
+            const verify=await window.pluginAPI.configGetAll('duty-easy'); cfg=verify||cfg;
+          }
+          try { if(channel) window.lowbarAPI.emitEvent?.(channel,{ type:'update', target:'refresh', value:true }); } catch (e) {}
+        } catch (e) {}
+      }
       async function setActiveGroup(gi){ try{
         const nextRule = { ...(cfg.rule||{}), currentGroupIndex: gi };
-        if (window.lowbarAPI?.pluginCall) {
-          await window.lowbarAPI.pluginCall(caller,'saveConfig',[{ rule: nextRule }]);
-          const res=await window.lowbarAPI.pluginCall(caller,'getConfig'); const r=res?.result||res; cfg=r?.config||cfg;
-        } else if (window.lowbarAPI?.configEnsureDefaults) {
-          await window.lowbarAPI.configEnsureDefaults('duty.easy',{});
-          await window.lowbarAPI.configSet('duty.easy','rule', nextRule);
-          const verify=await window.lowbarAPI.configGetAll('duty.easy'); cfg=verify||cfg;
-        } else if (window.pluginAPI?.configEnsureDefaults) {
-          await window.pluginAPI.configEnsureDefaults('duty.easy',{});
-          await window.pluginAPI.configSet('duty.easy','rule', nextRule);
-          const verify=await window.pluginAPI.configGetAll('duty.easy'); cfg=verify||cfg;
-        }
-        try{ if(channel) window.lowbarAPI.emitEvent?.(channel,{ type:'update', target:'refresh', value:true }) }catch (e) {}
+        await applyNextRule(nextRule);
         render()
       }catch (e) {} }
       (function(){ try{const u=new URL(window.location.href); channel=String(u.searchParams.get('channel')||''); caller=String(u.searchParams.get('caller')||'')}catch (e) {}

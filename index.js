@@ -9,7 +9,7 @@ function fileUrl(p) { return url.pathToFileURL(p).href; }
 
 function emitUpdate(channel, target, value) { try { pluginApi.emit(channel, { type: 'update', target, value }); } catch (e) {} }
 
-const EVENT_CHANNEL = 'duty.easy.channel';
+const EVENT_CHANNEL = 'duty-easy-channel';
 let state = { mode: 'preview', paths: {} };
 
 function todayISO() {
@@ -157,18 +157,18 @@ function predict(nextDays) {
 
 const functions = {
   openDuty: async () => {
-    state.paths.preview = fileUrl(path.join(__dirname, 'pages', 'preview.html')) + `?channel=${encodeURIComponent(EVENT_CHANNEL)}&caller=${encodeURIComponent('duty.easy')}`;
-    state.paths.roles = fileUrl(path.join(__dirname, 'pages', 'roles-list.html')) + `?channel=${encodeURIComponent(EVENT_CHANNEL)}&caller=${encodeURIComponent('duty.easy')}`;
-    state.paths.groups = fileUrl(path.join(__dirname, 'pages', 'groups-list.html')) + `?channel=${encodeURIComponent(EVENT_CHANNEL)}&caller=${encodeURIComponent('duty.easy')}`;
-    state.paths.rules = fileUrl(path.join(__dirname, 'pages', 'rules.html')) + `?channel=${encodeURIComponent(EVENT_CHANNEL)}&caller=${encodeURIComponent('duty.easy')}`;
-    state.paths.grid = fileUrl(path.join(__dirname, 'pages', 'grid.html')) + `?channel=${encodeURIComponent(EVENT_CHANNEL)}&caller=${encodeURIComponent('duty.easy')}`;
-    state.paths.rotation = fileUrl(path.join(__dirname, 'pages', 'rotation.html')) + `?channel=${encodeURIComponent(EVENT_CHANNEL)}&caller=${encodeURIComponent('duty.easy')}`;
+    state.paths.preview = fileUrl(path.join(__dirname, 'pages', 'preview.html')) + `?channel=${encodeURIComponent(EVENT_CHANNEL)}&caller=${encodeURIComponent('duty-easy')}`;
+    state.paths.roles = fileUrl(path.join(__dirname, 'pages', 'roles-list.html')) + `?channel=${encodeURIComponent(EVENT_CHANNEL)}&caller=${encodeURIComponent('duty-easy')}`;
+    state.paths.groups = fileUrl(path.join(__dirname, 'pages', 'groups-list.html')) + `?channel=${encodeURIComponent(EVENT_CHANNEL)}&caller=${encodeURIComponent('duty-easy')}`;
+    state.paths.rules = fileUrl(path.join(__dirname, 'pages', 'rules.html')) + `?channel=${encodeURIComponent(EVENT_CHANNEL)}&caller=${encodeURIComponent('duty-easy')}`;
+    state.paths.grid = fileUrl(path.join(__dirname, 'pages', 'grid.html')) + `?channel=${encodeURIComponent(EVENT_CHANNEL)}&caller=${encodeURIComponent('duty-easy')}`;
+    state.paths.rotation = fileUrl(path.join(__dirname, 'pages', 'rotation.html')) + `?channel=${encodeURIComponent(EVENT_CHANNEL)}&caller=${encodeURIComponent('duty-easy')}`;
     const bg = state.paths.preview;
     const params = {
       title: '轻松值日',
       eventChannel: EVENT_CHANNEL,
       subscribeTopics: [EVENT_CHANNEL],
-      callerPluginId: 'duty.easy',
+      callerPluginId: 'duty-easy',
       backgroundUrl: bg,
       floatingUrl: null,
       leftItems: [
@@ -180,7 +180,7 @@ const functions = {
         { id: 'view-rotation', text: '轮值', icon: 'ri-user-star-line', active: false }
       ]
     };
-    await pluginApi.call('ui.lowbar', 'openTemplate', [params]);
+    await pluginApi.call('ui-lowbar', 'openTemplate', [params]);
     return true;
   },
   showDutyOverlay: async () => {
@@ -202,7 +202,7 @@ const functions = {
       if (arr.length) { membersGroup.push({ role: r, names: arr }); members.push({ role: r, names: arr }); }
     });
     const props = { title: '今日值日生提醒', date: today.dateISO, group: today.groupName, members: JSON.stringify(members), columns: JSON.stringify(rg), membersGroup: JSON.stringify(membersGroup), membersSingle: JSON.stringify(membersSingle) };
-    await pluginApi.call('notify.plugin', 'overlayComponent', ['notify.overlay', 'component.duty.reminder', props, 120000, true, 3000]);
+    await pluginApi.call('notify-plugin', 'overlayComponent', ['notify-overlay', 'component.duty.reminder', props, 120000, true, 3000]);
     return true;
   },
   onLowbarEvent: async (payload = {}) => {
@@ -264,7 +264,7 @@ const init = async (api) => {
 };
 
 module.exports = {
-  name: 'duty.easy',
+  name: 'duty-easy',
   version: '1.0.0',
   description: '轻松值日（底栏模板）',
   init,

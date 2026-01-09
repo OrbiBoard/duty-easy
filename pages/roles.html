@@ -51,7 +51,7 @@
     <script>
       let channel=''; let caller=''; let cfg={ roles:[], groups:[], rule:{mode:'list',weekdayMap:{},currentGroupIndex:0,currentRotationIndex:0} };
       function parseList(s,sep){ return String(s||'').split(sep).map(x=>x.trim()).filter(x=>x) }
-      async function load(){ await window.lowbarAPI.configEnsureDefaults('duty.easy',{}); const all=await window.lowbarAPI.configGetAll('duty.easy'); cfg=all||{}; if(!Array.isArray(cfg.roles)) cfg.roles=[]; if(!Array.isArray(cfg.groups)) cfg.groups=[]; if(!cfg.rule) cfg.rule={mode:'list',weekdayMap:{},currentGroupIndex:0,currentRotationIndex:0};
+      async function load(){ await window.lowbarAPI.configEnsureDefaults('duty-easy',{}); const all=await window.lowbarAPI.configGetAll('duty-easy'); cfg=all||{}; if(!Array.isArray(cfg.roles)) cfg.roles=[]; if(!Array.isArray(cfg.groups)) cfg.groups=[]; if(!cfg.rule) cfg.rule={mode:'list',weekdayMap:{},currentGroupIndex:0,currentRotationIndex:0};
         document.getElementById('roles').value=(cfg.roles||[]).join('\n');
         document.getElementById('groupNames').value=(cfg.groups||[]).map(g=>g.name||'').join(',');
         document.getElementById('ruleMode').value=String(cfg.rule.mode||'list');
@@ -61,7 +61,7 @@
       function save(){ const roles=parseList(document.getElementById('roles').value,'\n'); const names=parseList(document.getElementById('groupNames').value,',');
         const old=Array.isArray(cfg.groups)?cfg.groups:[]; const nextGroups=names.map((nm,i)=>{ const g=old[i]||{name:nm,roles:{}}; const obj={name:nm,roles:{}}; roles.forEach(r=>{ obj.roles[r]=Array.isArray(g.roles?.[r])?g.roles[r]:[] }); return obj });
         cfg.roles=roles; cfg.groups=nextGroups; cfg.rule=cfg.rule||{}; const mode=document.getElementById('ruleMode').value; cfg.rule.mode=mode; if(mode==='weekday'){ const pairs=parseList(document.getElementById('weekdayMap').value,','); const map={}; pairs.forEach(p=>{ const kv=p.split(':'); const k=parseInt(kv[0],10); const v=(kv[1]||'').trim(); const idx=names.indexOf(v); if(Number.isFinite(k)&&idx>=0) map[k]=idx }); cfg.rule.weekdayMap=map }
-        window.lowbarAPI.configSet('duty.easy','roles',cfg.roles); window.lowbarAPI.configSet('duty.easy','groups',cfg.groups); window.lowbarAPI.configSet('duty.easy','rule',cfg.rule);
+        window.lowbarAPI.configSet('duty-easy','roles',cfg.roles); window.lowbarAPI.configSet('duty-easy','groups',cfg.groups); window.lowbarAPI.configSet('duty-easy','rule',cfg.rule);
       }
       (function(){ try{const u=new URL(window.location.href); channel=String(u.searchParams.get('channel')||''); caller=String(u.searchParams.get('caller')||'');}catch (e) {}
         if(window.lowbarAPI){ window.lowbarAPI.subscribe?.(channel); window.lowbarAPI.onEvent?.((n,p)=>{ if(n!==channel)return; if(p?.type==='update'){ if(p.target==='duty.save'){ save() } }}); }

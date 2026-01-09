@@ -37,20 +37,20 @@
       async function load(){
         try {
           if (window.lowbarAPI?.pluginCall) {
-            const res = await window.lowbarAPI.pluginCall(caller,'getConfig');
+            const res = await window.lowbarAPI.pluginCall('duty-easy','getConfig');
             const r = res?.result || res; cfg = r?.config || {};
           } else if (window.lowbarAPI?.configEnsureDefaults) {
-            await window.lowbarAPI.configEnsureDefaults('duty.easy',{
+            await window.lowbarAPI.configEnsureDefaults('duty-easy',{
               roles: ['清洁','黑板','值日生'],
               groups: [
                 { name: '一组', roles: { '清洁': [], '黑板': [], '值日生': [] } },
                 { name: '二组', roles: { '清洁': [], '黑板': [], '值日生': [] } }
               ]
             });
-            const all = await window.lowbarAPI.configGetAll('duty.easy'); cfg = all || {};
+            const all = await window.lowbarAPI.configGetAll('duty-easy'); cfg = all || {};
           } else if (window.pluginAPI?.configEnsureDefaults) {
-            await window.pluginAPI.configEnsureDefaults('duty.easy',{});
-            const all = await window.pluginAPI.configGetAll('duty.easy'); cfg = all || {};
+            await window.pluginAPI.configEnsureDefaults('duty-easy',{});
+            const all = await window.pluginAPI.configGetAll('duty-easy'); cfg = all || {};
           }
         } catch (e) {}
         if(!Array.isArray(cfg.roles)) cfg.roles=[]; if(!Array.isArray(cfg.groups)) cfg.groups=[]; if(!Array.isArray(cfg.dynamicRoles)) cfg.dynamicRoles=[]; render()
@@ -64,30 +64,33 @@
           all.forEach(g=>{ const next={}; (cfg.roles||[]).forEach(r=>{ next[r]=Array.isArray(g.roles?.[r])?g.roles[r]:[] }); g.roles=next });
           const names=(cfg.roles||[]).map(s=>String(s||'').trim()).filter(s=>s); const dup=names.filter((n,idx)=>names.indexOf(n)!==idx); if(dup.length>0){ alert('分工名称重复，请修改后保存'); return }
           if (window.lowbarAPI?.pluginCall) {
-            await window.lowbarAPI.pluginCall(caller,'saveConfig', [{ roles: cfg.roles, groups: all, dynamicRoles: cfg.dynamicRoles }]);
-            const res = await window.lowbarAPI.pluginCall(caller, 'getConfig'); const r=res?.result||res; cfg=r?.config||cfg;
+            await window.lowbarAPI.pluginCall('duty-easy', 'saveConfig', [{ roles: cfg.roles, groups: all, dynamicRoles: cfg.dynamicRoles }]);
+            const res = await window.lowbarAPI.pluginCall('duty-easy', 'getConfig');
+            const r = res?.result || res;
+            cfg = r?.config || cfg;
             try{ if(channel) window.lowbarAPI.emitEvent?.(channel,{ type:'update', target:'refresh', value:true }) }catch (e) {}
           } else if (window.lowbarAPI?.configEnsureDefaults) {
-            await window.lowbarAPI.configEnsureDefaults('duty.easy',{
+            await window.lowbarAPI.configEnsureDefaults('duty-easy',{
               roles: ['清洁','黑板','值日生'],
               groups: [
                 { name: '一组', roles: { '清洁': [], '黑板': [], '值日生': [] } },
                 { name: '二组', roles: { '清洁': [], '黑板': [], '值日生': [] } }
               ]
             });
-            await window.lowbarAPI.configSet('duty.easy','roles',cfg.roles);
-            await window.lowbarAPI.configSet('duty.easy','groups',all);
-            await window.lowbarAPI.configSet('duty.easy','dynamicRoles',cfg.dynamicRoles);
-            const verify=await window.lowbarAPI.configGetAll('duty.easy'); cfg=verify||cfg;
+            await window.lowbarAPI.configSet('duty-easy','roles',cfg.roles);
+            await window.lowbarAPI.configSet('duty-easy','groups',all);
+            await window.lowbarAPI.configSet('duty-easy','dynamicRoles',cfg.dynamicRoles);
+            const verify=await window.lowbarAPI.configGetAll('duty-easy'); cfg=verify||cfg;
             try{ if(channel) window.lowbarAPI.emitEvent?.(channel,{ type:'update', target:'refresh', value:true }) }catch (e) {}
           } else if (window.pluginAPI?.configEnsureDefaults) {
-            await window.pluginAPI.configEnsureDefaults('duty.easy',{});
-            await window.pluginAPI.configSet('duty.easy','roles',cfg.roles);
-            await window.pluginAPI.configSet('duty.easy','groups',all);
-            await window.pluginAPI.configSet('duty.easy','dynamicRoles',cfg.dynamicRoles);
-            const verify=await window.pluginAPI.configGetAll('duty.easy'); cfg=verify||cfg;
+            await window.pluginAPI.configEnsureDefaults('duty-easy',{});
+            await window.pluginAPI.configSet('duty-easy','roles',cfg.roles);
+            await window.pluginAPI.configSet('duty-easy','groups',all);
+            await window.pluginAPI.configSet('duty-easy','dynamicRoles',cfg.dynamicRoles);
+            const verify=await window.pluginAPI.configGetAll('duty-easy'); cfg=verify||cfg;
             try{ if(channel) window.pluginAPI.emitEvent?.(channel,{ type:'update', target:'refresh', value:true }) }catch (e) {}
           }
+          try { if (channel) window.lowbarAPI.emitEvent?.(channel, { type: 'update', target: 'refresh', value: true }); } catch (e) {}
         } catch (e) {}
       }
       (function(){ try{ const u=new URL(window.location.href); channel=String(u.searchParams.get('channel')||''); caller=String(u.searchParams.get('caller')||'') }catch (e) {}
