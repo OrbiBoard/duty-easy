@@ -1,7 +1,6 @@
 const path = require('path');
 const { app } = require('electron');
 const url = require('url');
-const store = require(path.join(app.getAppPath(), 'src', 'main', 'store.js'));
 
 let pluginApi = null;
 
@@ -23,6 +22,7 @@ function todayISO() {
 function dow(date) { const d = new Date(date); return d.getDay(); }
 
 function ensureDefaults() {
+  if (!pluginApi) return;
   const defaults = {
     roles: ['清洁', '黑板', '值日生'],
     groups: [
@@ -45,12 +45,23 @@ function ensureDefaults() {
     singleRoleConditions: {},
     lastStartupDate: ''
   };
-  try { store.ensureDefaults('duty-easy', defaults); } catch (e) {}
+  try {
+    const current = pluginApi.store.getAll() || {};
+    let changed = false;
+    Object.keys(defaults).forEach((k) => {
+      if (!(k in current)) {
+        current[k] = defaults[k];
+        changed = true;
+      }
+    });
+    if (changed) pluginApi.store.setAll(current);
+  } catch (e) {}
 }
 
 function advanceOnStartup() {
   ensureDefaults();
-  const cfg = store.getAll('duty-easy');
+  if (!pluginApi) return;
+  const cfg = pluginApi.store.getAll();
   const today = todayISO();
   const last = cfg.lastStartupDate || '';
   if (last !== today) {
@@ -89,14 +100,15 @@ function advanceOnStartup() {
       indices[r] = arr.length ? (cur + 1) % arr.length : 0;
     });
     nextRule = { ...nextRule, currentGroupIndex: gi, singleRoleIndices: indices };
-    store.set('duty-easy', 'rule', nextRule);
-    store.set('duty-easy', 'lastStartupDate', today);
+    pluginApi.store.set('rule', nextRule);
+    pluginApi.store.set('lastStartupDate', today);
   }
 }
 
 function predict(nextDays) {
   ensureDefaults();
-  const cfg = store.getAll('duty-easy');
+  if (!pluginApi) return [];
+  const cfg = pluginApi.store.getAll();
   const groups = Array.isArray(cfg.groups) ? cfg.groups : [];
   const rolesAll = Array.isArray(cfg.roles) ? cfg.roles : [];
   const dynRoles = Array.isArray(cfg.dynamicRoles) ? cfg.dynamicRoles : [];
@@ -235,18 +247,18 @@ const functions = {
     } catch (e) { return { ok: false, error: e?.message || String(e) }; }
   },
   getConfig: async () => {
-    try { ensureDefaults(); return { ok: true, config: store.getAll('duty-easy') }; } catch (e) { return { ok: false, error: e?.message || String(e) }; }
+    try { ensureDefaults(); return { ok: true, config: pluginApi.store.getAll() }; } catch (e) { return { ok: false, error: e?.message || String(e) }; }
   },
   saveConfig: async (payload = {}) => {
     try {
       ensureDefaults();
-      if (Array.isArray(payload.roles)) store.set('duty-easy', 'roles', payload.roles);
-      if (Array.isArray(payload.groups)) store.set('duty-easy', 'groups', payload.groups);
-      if (payload.rule && typeof payload.rule === 'object') store.set('duty-easy', 'rule', payload.rule);
-      if (Array.isArray(payload.dynamicRoles)) store.set('duty-easy', 'dynamicRoles', payload.dynamicRoles);
-      if (payload.singleRoleLists && typeof payload.singleRoleLists === 'object') store.set('duty-easy', 'singleRoleLists', payload.singleRoleLists);
-      if (Array.isArray(payload.singleRoles)) store.set('duty-easy', 'singleRoles', payload.singleRoles);
-      if (payload.singleRoleConditions && typeof payload.singleRoleConditions === 'object') store.set('duty-easy', 'singleRoleConditions', payload.singleRoleConditions);
+      if (Array.isArray(payload.roles)) pluginApi.store.set('roles', payload.roles);
+      if (Array.isArray(payload.groups)) pluginApi.store.set('groups', payload.groups);
+      if (payload.rule && typeof payload.rule === 'object') pluginApi.store.set('rule', payload.rule);
+      if (Array.isArray(payload.dynamicRoles)) pluginApi.store.set('dynamicRoles', payload.dynamicRoles);
+      if (payload.singleRoleLists && typeof payload.singleRoleLists === 'object') pluginApi.store.set('singleRoleLists', payload.singleRoleLists);
+      if (Array.isArray(payload.singleRoles)) pluginApi.store.set('singleRoles', payload.singleRoles);
+      if (payload.singleRoleConditions && typeof payload.singleRoleConditions === 'object') pluginApi.store.set('singleRoleConditions', payload.singleRoleConditions);
       return { ok: true };
     } catch (e) { return { ok: false, error: e?.message || String(e) }; }
   },
