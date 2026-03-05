@@ -1,7 +1,7 @@
 {
   "id": "duty-easy",
   "name": "值日编排与提醒",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "author": "OrbiBoard",
   "icon": "ri-calendar-check-line",
   "description": "使用底栏模板的值日安排与分工管理",
