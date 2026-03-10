@@ -90,6 +90,7 @@
     <script>
       let channel = '';
       let caller = '';
+      let selectorChannel = 'profiles-selector-channel';
       let cfg = { roles: [], groups: [], rule: {}, rotationLists: [], lastStartupDate: '' };
 
       function el(tag, cls) { const e = document.createElement(tag); if (cls) e.className = cls; return e; }
@@ -214,9 +215,10 @@
             const addBtn = el('button', 'btn secondary'); addBtn.innerHTML = '<i class="ri-add-line"></i> 添加';
             addBtn.addEventListener('click', () => {
               try {
-                const url = new URL('../../plugins/profiles-students/index.html', window.location.href);
-                url.searchParams.set('channel', 'profiles-students-channel');
-                url.searchParams.set('caller', 'profiles-students');
+                const url = new URL('../../plugins/profiles-selector/index.html', window.location.href);
+                url.searchParams.set('channel', 'profiles-selector-channel');
+                url.searchParams.set('caller', 'profiles-selector');
+                url.searchParams.set('multiSelect', 'true');
                 window.lowbarAPI?.emitEvent?.(channel, { type:'update', target:'floatingUrl', value: url.href });
                 window.__dutyGridPick__ = { gi, r };
               } catch (e) {}
@@ -304,13 +306,13 @@
         } catch (e) {}
         if (window.lowbarAPI) {
           window.lowbarAPI.subscribe?.(channel);
+          window.lowbarAPI.subscribe?.(selectorChannel);
           window.lowbarAPI.onEvent?.(async (name, payload) => {
-            if (name !== channel && !(payload?.type === 'pick')) return;
-            if (payload?.type === 'update') {
+            if (payload?.type === 'update' && name === channel) {
               if (payload.target === 'duty.save') { await collectAndSave(); await loadPreview(); }
               if (payload.target === 'refresh') { loadPreview(); }
             }
-            if (payload?.type === 'pick' && payload.name) {
+            if (name === selectorChannel && payload?.type === 'pick' && payload.name) {
               try {
                 const pick = window.__dutyGridPick__;
                 const nm = String(payload.name || '').trim();
@@ -322,6 +324,25 @@
                   window.lowbarAPI?.emitEvent?.(channel, { type:'update', target:'floatingUrl', value: null });
                 }
               } catch (e) {}
+            }
+            if (name === selectorChannel && payload?.type === 'pickMultiple' && Array.isArray(payload.names)) {
+              try {
+                const pick = window.__dutyGridPick__;
+                if (pick && payload.names.length > 0) {
+                  const arr = Array.isArray(cfg.groups?.[pick.gi]?.roles?.[pick.r]) ? cfg.groups[pick.gi].roles[pick.r] : (cfg.groups[pick.gi].roles[pick.r] = []);
+                  payload.names.forEach(nm => {
+                    const name = String(nm || '').trim();
+                    if (name) arr.push(name);
+                  });
+                  window.__dutyGridPick__ = null;
+                  renderGrid();
+                  window.lowbarAPI?.emitEvent?.(channel, { type:'update', target:'floatingUrl', value: null });
+                }
+              } catch (e) {}
+            }
+            if (name === selectorChannel && payload?.type === 'cancel') {
+              window.__dutyGridPick__ = null;
+              window.lowbarAPI?.emitEvent?.(channel, { type:'update', target:'floatingUrl', value: null });
             }
           });
         }

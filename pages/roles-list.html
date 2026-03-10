@@ -7,19 +7,185 @@
     <link rel="stylesheet" href="../../../renderer/remixicon-local.css" />
     <link rel="stylesheet" href="../../../renderer/settings.css" />
     <style>
-      html, body { height: 100%; }
-      body { margin: 0; overflow: auto; }
-      .section { padding: 16px; background: transparent !important; border: none !important; }
-      .list { display: flex; flex-direction: column; gap: 8px; }
-      .item { display: flex; gap: 8px; align-items: center; }
-      .item input { flex: 1; padding: 6px 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.06); color: var(--fg); }
-      .btn { padding: 6px 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.06); color: var(--fg); cursor: pointer; }
-      .btn.secondary { background: rgba(255,255,255,0.08); }
-      .btn.danger { background: rgba(255, 100, 100, 0.2); border-color: rgba(255, 100, 100, 0.4); }
-      .actions { display: flex; gap: 8px; margin-top: 8px; }
-      .adv { display:inline-flex; align-items:center; gap:6px; padding:2px 8px; border-radius:999px; border:1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.08); font-size:12px }
-      .dup { border-color: rgba(255,100,100,0.6) !important; }
-      .hint { color: rgba(255,100,100,0.9); font-size: 12px; margin-top: 6px; }
+      :root {
+        --bg: #181818;
+        --fg: #e6e6e6;
+        --muted: #aaa;
+        --accent: #6ab4ff;
+        --accent-rgb: 106, 180, 255;
+        --panel: rgba(255, 255, 255, 0.04);
+        --item-bg: rgba(255, 255, 255, 0.04);
+        --border: #2a2a2a;
+      }
+      
+      html, body {
+        height: 100%;
+        user-select: none;
+        transition: background 0.3s, color 0.3s;
+      }
+      
+      body {
+        margin: 0;
+        font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Microsoft YaHei", sans-serif;
+        background: var(--bg);
+        color: var(--fg);
+        overflow-y: auto;
+      }
+      
+      /* 全局滚动条样式 */
+      body::-webkit-scrollbar {
+        width: 10px;
+        height: 10px;
+      }
+      
+      body::-webkit-scrollbar-track {
+        background: var(--item-bg);
+        border-left: 1px solid var(--border);
+      }
+      
+      body::-webkit-scrollbar-thumb {
+        background: var(--border);
+        border: 1px solid var(--bg);
+        border-radius: 999px;
+      }
+      
+      body::-webkit-scrollbar-thumb:hover {
+        background: var(--muted);
+      }
+      
+      .section {
+        margin: 20px;
+        padding: 16px;
+        background: var(--panel) !important;
+        border: 1px solid var(--border) !important;
+        border-radius: 12px;
+        animation: fadeInUp 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+      }
+      
+      @keyframes fadeInUp {
+        from {
+          opacity: 0;
+          transform: translateY(30px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      
+      .section-title {
+        font-weight: 600;
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        color: var(--fg);
+      }
+      
+      .list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      
+      .item {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        padding: 10px 12px;
+        border: 1px solid var(--border);
+        background: var(--item-bg);
+        border-radius: 8px;
+        transition: border-color 0.2s ease, background 0.2s ease;
+      }
+      
+      .item:hover {
+        border-color: rgba(var(--accent-rgb), 0.45);
+        background: rgba(var(--accent-rgb), 0.08);
+      }
+      
+      .item input {
+        flex: 1;
+        padding: 8px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: var(--item-bg);
+        color: var(--fg);
+        transition: border-color 0.2s ease;
+      }
+      
+      .item input:focus {
+        outline: none;
+        border-color: var(--accent);
+      }
+      
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        border: none;
+        border-radius: 6px;
+        padding: 8px 12px;
+        cursor: pointer;
+        background: var(--accent);
+        color: #fff;
+        transition: background 0.2s ease;
+      }
+      
+      .btn:hover {
+        background: #1a8f46;
+      }
+      
+      .btn.secondary {
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid var(--border);
+        color: var(--fg);
+      }
+      
+      .btn.secondary:hover {
+        background: rgba(255, 255, 255, 0.09);
+      }
+      
+      .btn.danger {
+        background: #dc2626;
+        color: #fff;
+      }
+      
+      .btn.danger:hover {
+        background: #b91c1c;
+      }
+      
+      .actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 16px;
+      }
+      
+      .adv {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        background: var(--item-bg);
+        font-size: 12px;
+        color: var(--fg);
+      }
+      
+      .dup {
+        border-color: #dc2626 !important;
+      }
+      
+      .hint {
+        color: #fca5a5;
+        font-size: 12px;
+        margin-top: 8px;
+        padding: 8px;
+        border: 1px solid rgba(220, 38, 38, 0.25);
+        background: rgba(220, 38, 38, 0.1);
+        border-radius: 6px;
+      }
     </style>
   </head>
   <body>
@@ -32,6 +198,59 @@
       </div>
     </div>
     <script>
+      // --- Theme Logic ---
+      window.applyTheme = (mode, color) => {
+        const root = document.documentElement;
+        const isDark = mode === 'dark' || (mode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        const accent = color || '#6ab4ff';
+        root.style.setProperty('--accent', accent);
+        root.style.setProperty('--accent-rgb', accent.replace('#', '').match(/.{2}/g).map(hex => parseInt(hex, 16)).join(','));
+        
+        if (isDark) {
+          root.style.setProperty('--bg', '#181818');
+          root.style.setProperty('--fg', '#e6e6e6');
+          root.style.setProperty('--muted', '#aaa');
+          root.style.setProperty('--panel', 'rgba(255, 255, 255, 0.04)');
+          root.style.setProperty('--item-bg', 'rgba(255, 255, 255, 0.04)');
+          root.style.setProperty('--border', '#2a2a2a');
+        } else {
+          root.style.setProperty('--bg', '#ffffff');
+          root.style.setProperty('--fg', '#333333');
+          root.style.setProperty('--muted', '#666666');
+          root.style.setProperty('--panel', 'rgba(0, 0, 0, 0.04)');
+          root.style.setProperty('--item-bg', 'rgba(0, 0, 0, 0.04)');
+          root.style.setProperty('--border', '#e0e0e0');
+        }
+      };
+
+      (async () => {
+        try {
+          if (window.lowbarAPI?.configGet) {
+            const mode = await window.lowbarAPI.configGet('system', 'themeMode') || 'system';
+            const color = await window.lowbarAPI.configGet('system', 'themeColor') || '#6ab4ff';
+            window.applyTheme(mode, color);
+          }
+          if (window.lowbarAPI?.onConfigChanged) {
+            window.lowbarAPI.onConfigChanged(({ scope, key, value }) => {
+              if (scope === 'system') {
+                 (async () => {
+                   const m = await window.lowbarAPI.configGet('system', 'themeMode') || 'system';
+                   const c = await window.lowbarAPI.configGet('system', 'themeColor') || '#6ab4ff';
+                   window.applyTheme(m, c);
+                 })();
+              }
+            });
+          }
+          window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', async () => {
+             const m = await window.lowbarAPI.configGet('system', 'themeMode') || 'system';
+             if (m === 'system') {
+                const c = await window.lowbarAPI.configGet('system', 'themeColor') || '#6ab4ff';
+                window.applyTheme('system', c);
+             }
+          });
+        } catch (e) { console.error('Theme init failed', e); }
+      })();
+
       let channel=''; let caller=''; let cfg={ roles:[], dynamicRoles:[] };
       function el(t,c){ const e=document.createElement(t); if(c) e.className=c; return e }
       async function load(){
@@ -55,7 +274,7 @@
         } catch (e) {}
         if(!Array.isArray(cfg.roles)) cfg.roles=[]; if(!Array.isArray(cfg.groups)) cfg.groups=[]; if(!Array.isArray(cfg.dynamicRoles)) cfg.dynamicRoles=[]; render()
       }
-      function render(){ const box=document.getElementById('list'); box.innerHTML=''; cfg.roles.forEach((name,idx)=>{ const row=el('div','item'); const inp=document.createElement('input'); inp.value=name||''; inp.placeholder='分工名称'; const up=document.createElement('button'); up.className='btn secondary'; up.innerHTML='<i class="ri-arrow-up-s-line"></i>'; const down=document.createElement('button'); down.className='btn secondary'; down.innerHTML='<i class="ri-arrow-down-s-line"></i>'; const adv=document.createElement('button'); adv.className='btn secondary'; adv.innerHTML='<i class="ri-settings-3-line"></i> 高级'; const del=document.createElement('button'); del.className='btn danger'; del.innerHTML='<i class="ri-delete-bin-line"></i>'; const isDyn=Array.isArray(cfg.dynamicRoles)?cfg.dynamicRoles.includes(name):false; const advInfo=document.createElement('span'); advInfo.className='adv'; advInfo.textContent=isDyn?'动态分工：开启':'动态分工：关闭'; inp.addEventListener('input',()=>{ cfg.roles[idx]=inp.value }); up.addEventListener('click',()=>{ if(idx>0){ const t=cfg.roles[idx]; cfg.roles[idx]=cfg.roles[idx-1]; cfg.roles[idx-1]=t; render() } }); down.addEventListener('click',()=>{ if(idx<cfg.roles.length-1){ const t=cfg.roles[idx]; cfg.roles[idx]=cfg.roles[idx+1]; cfg.roles[idx+1]=t; render() } }); adv.addEventListener('click',()=>{ toggleDynamic(name); }); del.addEventListener('click',()=>{ cfg.roles.splice(idx,1); if(Array.isArray(cfg.dynamicRoles)){ cfg.dynamicRoles=cfg.dynamicRoles.filter(r=>r!==name) } render() }); row.appendChild(inp); row.appendChild(up); row.appendChild(down); row.appendChild(adv); row.appendChild(del); row.appendChild(advInfo); box.appendChild(row) }) }
+      function render(){ const box=document.getElementById('list'); box.innerHTML=''; cfg.roles.forEach((name,idx)=>{ const row=el('div','item'); const inp=document.createElement('input'); inp.value=name||''; inp.placeholder='分工名称'; const isDyn=Array.isArray(cfg.dynamicRoles)?cfg.dynamicRoles.includes(name):false; const advInfo=document.createElement('span'); advInfo.className='adv'; advInfo.textContent=isDyn?'动态分工：开启':'动态分工：关闭'; const up=document.createElement('button'); up.className='btn secondary'; up.innerHTML='<i class="ri-arrow-up-s-line"></i>'; const down=document.createElement('button'); down.className='btn secondary'; down.innerHTML='<i class="ri-arrow-down-s-line"></i>'; const adv=document.createElement('button'); adv.className='btn secondary'; adv.innerHTML='<i class="ri-settings-3-line"></i> 高级'; const del=document.createElement('button'); del.className='btn danger'; del.innerHTML='<i class="ri-delete-bin-line"></i>'; inp.addEventListener('input',()=>{ cfg.roles[idx]=inp.value }); up.addEventListener('click',()=>{ if(idx>0){ const t=cfg.roles[idx]; cfg.roles[idx]=cfg.roles[idx-1]; cfg.roles[idx-1]=t; render() } }); down.addEventListener('click',()=>{ if(idx<cfg.roles.length-1){ const t=cfg.roles[idx]; cfg.roles[idx]=cfg.roles[idx+1]; cfg.roles[idx+1]=t; render() } }); adv.addEventListener('click',()=>{ toggleDynamic(name); }); del.addEventListener('click',()=>{ cfg.roles.splice(idx,1); if(Array.isArray(cfg.dynamicRoles)){ cfg.dynamicRoles=cfg.dynamicRoles.filter(r=>r!==name) } render() }); row.appendChild(inp); row.appendChild(advInfo); row.appendChild(up); row.appendChild(down); row.appendChild(adv); row.appendChild(del); box.appendChild(row) }) }
       function toggleDynamic(role){ const arr=Array.isArray(cfg.dynamicRoles)?cfg.dynamicRoles:(cfg.dynamicRoles=[]); const idx=arr.indexOf(role); if(idx>=0) arr.splice(idx,1); else arr.push(role); render() }
       function validate(){ const inputs=[...document.querySelectorAll('.item input')]; const names=inputs.map(i=>i.value.trim()).filter(s=>s); const dupNames=names.filter((n,idx)=>names.indexOf(n)!==idx); inputs.forEach(i=>{ if(dupNames.includes(i.value.trim())) i.classList.add('dup'); else i.classList.remove('dup') }); const saveBtn=document.getElementById('save'); const hintId='roles-dup-hint'; let hint=document.getElementById(hintId); if(dupNames.length>0){ saveBtn.disabled=true; if(!hint){ hint=document.createElement('div'); hint.className='hint'; hint.id=hintId; hint.textContent='分工名称重复，请修改后保存'; document.querySelector('.section').appendChild(hint) } } else { saveBtn.disabled=false; if(hint) hint.remove() } }
       async function save(){

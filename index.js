@@ -79,18 +79,39 @@ function advanceOnStartup() {
     const dynRoles = Array.isArray(cfg.dynamicRoles) ? cfg.dynamicRoles : [];
     const dynActive = typeof rule.dynamicActiveRole === 'object' && rule.dynamicActiveRole ? rule.dynamicActiveRole : {};
     const dynIdx = typeof rule.dynamicIndices === 'object' && rule.dynamicIndices ? { ...rule.dynamicIndices } : {};
-    const giKey = String(gi);
-    const perIdx = typeof dynIdx[giKey] === 'object' && dynIdx[giKey] ? { ...dynIdx[giKey] } : {};
-    const groupObj = groups[gi] || { roles: {} };
-    dynRoles.forEach((rDyn) => {
-      const perGroupActive = typeof dynActive[giKey] === 'object' && dynActive[giKey] ? dynActive[giKey] : {};
-      const activeRole = String(perGroupActive[rDyn] || rDyn);
-      const arr = Array.isArray(groupObj.roles?.[activeRole]) ? groupObj.roles[activeRole] : [];
-      if (!arr.length) return;
-      const base = Number.isFinite(perIdx[rDyn]) ? perIdx[rDyn] : 0;
-      perIdx[rDyn] = (base + 1) % arr.length;
-    });
-    dynIdx[giKey] = perIdx;
+    const dynamicMode = rule.dynamicMode || 'multi';
+    
+    if (dynamicMode === 'single') {
+      dynRoles.forEach((rDyn) => {
+        groups.forEach((groupObj, groupIndex) => {
+          const giKey = String(groupIndex);
+          const perIdx = typeof dynIdx[giKey] === 'object' && dynIdx[giKey] ? { ...dynIdx[giKey] } : {};
+          const perGroupActive = typeof dynActive[giKey] === 'object' && dynActive[giKey] ? dynActive[giKey] : {};
+          const activeRole = String(perGroupActive[rDyn] || '');
+          if (!activeRole) return;
+          const arr = Array.isArray(groupObj.roles?.[activeRole]) ? groupObj.roles[activeRole] : [];
+          if (!arr.length) return;
+          const base = Number.isFinite(perIdx[rDyn]) ? perIdx[rDyn] : 0;
+          perIdx[rDyn] = (base + 1) % arr.length;
+          dynIdx[giKey] = perIdx;
+        });
+      });
+    } else {
+      const giKey = String(gi);
+      const perIdx = typeof dynIdx[giKey] === 'object' && dynIdx[giKey] ? { ...dynIdx[giKey] } : {};
+      const groupObj = groups[gi] || { roles: {} };
+      dynRoles.forEach((rDyn) => {
+        const perGroupActive = typeof dynActive[giKey] === 'object' && dynActive[giKey] ? dynActive[giKey] : {};
+        const activeRole = String(perGroupActive[rDyn] || '');
+        if (!activeRole) return;
+        const arr = Array.isArray(groupObj.roles?.[activeRole]) ? groupObj.roles[activeRole] : [];
+        if (!arr.length) return;
+        const base = Number.isFinite(perIdx[rDyn]) ? perIdx[rDyn] : 0;
+        perIdx[rDyn] = (base + 1) % arr.length;
+      });
+      dynIdx[giKey] = perIdx;
+    }
+    
     nextRule = { ...nextRule, currentGroupIndex: gi, dynamicIndices: dynIdx };
     const roles = Array.isArray(cfg.singleRoles) ? cfg.singleRoles : (Array.isArray(cfg.roles) ? cfg.roles : []);
     const indices = typeof rule.singleRoleIndices === 'object' && rule.singleRoleIndices ? { ...rule.singleRoleIndices } : {};
@@ -105,7 +126,7 @@ function advanceOnStartup() {
   }
 }
 
-function predict(nextDays) {
+function predict(startOffset, nextDays) {
   ensureDefaults();
   if (!pluginApi) return [];
   const cfg = pluginApi.store.getAll();
@@ -115,12 +136,14 @@ function predict(nextDays) {
   const singleRoles = Array.isArray(cfg.singleRoles) ? cfg.singleRoles : rolesAll;
   const rule = cfg.rule || {};
   const baseDate = new Date(todayISO());
+  baseDate.setDate(baseDate.getDate() + startOffset);
   const out = [];
   function weekNumberISO(dateStr){ const d=new Date(dateStr); const dd=new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())); const day=(dd.getUTCDay()+6)%7; dd.setUTCDate(dd.getUTCDate()-day+3); const firstThursday=new Date(Date.UTC(dd.getUTCFullYear(),0,4)); const diff=dd-firstThursday; return 1+Math.round(diff/604800000); }
   function matchCond(dateStr, cond){ if(!cond||typeof cond!=='object') return true; const wk=weekNumberISO(dateStr); const isOdd=(wk%2)===1; if(cond.mode==='odd' && !isOdd) return false; if(cond.mode==='even' && isOdd) return false; const d=new Date(dateStr).getDay(); const d17=d===0?7:d; const arr=Array.isArray(cond.weekdays)?cond.weekdays:[]; if(arr.length){ return arr.includes(d17); } return true; }
   const dynActive = typeof rule.dynamicActiveRole === 'object' && rule.dynamicActiveRole ? rule.dynamicActiveRole : {};
   const dynIdx = typeof rule.dynamicIndices === 'object' && rule.dynamicIndices ? rule.dynamicIndices : {};
-  const norm = (v,len)=>{ const m=((v%len)+len)%len; return m };
+  const dynamicMode = rule.dynamicMode || 'multi';
+  
   for (let i = 0; i < nextDays; i++) {
     const d = new Date(baseDate.getTime() + i * 24 * 60 * 60 * 1000);
     const yyyy = d.getFullYear();
@@ -128,15 +151,22 @@ function predict(nextDays) {
     const dd = String(d.getDate()).padStart(2, '0');
     const dateISO = `${yyyy}-${mm}-${dd}`;
     let gi = Number.isFinite(rule.currentGroupIndex) ? rule.currentGroupIndex : 0;
-    if ((rule.mode || 'list') === 'list') {
-      gi = groups.length ? (gi + i) % groups.length : 0;
-    } else {
-      const map = rule.weekdayMap || {};
-      const idx = map[d.getDay()];
-      gi = Number.isFinite(idx) ? idx : 0;
+    
+    // 单组连续轮值模式下，预览直接显示当前组
+    if (dynamicMode !== 'single') {
+      if ((rule.mode || 'list') === 'list') {
+        gi = groups.length ? (gi + i) % groups.length : 0;
+      } else {
+        const map = rule.weekdayMap || {};
+        const idx = map[d.getDay()];
+        gi = Number.isFinite(idx) ? idx : 0;
+      }
     }
+    
     const group = groups[gi] || { name: '', roles: {} };
     const groupMembers = {};
+    const dynStatus = {};
+    
     rolesAll.forEach((rDyn) => {
       const isDyn = dynRoles.includes(rDyn);
       if (!isDyn) {
@@ -145,11 +175,24 @@ function predict(nextDays) {
       }
       const giKey = String(gi);
       const perGroup = typeof dynActive[giKey] === 'object' && dynActive[giKey] ? dynActive[giKey] : {};
-      const activeRole = String(perGroup[rDyn] || rDyn);
+      const activeRole = String(perGroup[rDyn] || '');
+      if (!activeRole) {
+        groupMembers[rDyn] = [];
+        dynStatus[rDyn] = 'none';
+        return;
+      }
       const arr = Array.isArray(group.roles?.[activeRole]) ? group.roles[activeRole] : [];
-      if (!arr.length) { groupMembers[rDyn] = []; return; }
-      groupMembers[rDyn] = arr.slice();
+      if (!arr.length) { groupMembers[rDyn] = []; dynStatus[rDyn] = 'empty'; return; }
+      dynStatus[rDyn] = 'active';
+      
+      if (dynamicMode === 'single') {
+        const base = Number.isFinite(dynIdx[giKey]?.[rDyn]) ? dynIdx[giKey][rDyn] : 0;
+        groupMembers[rDyn] = [arr[base]];
+      } else {
+        groupMembers[rDyn] = arr.slice();
+      }
     });
+    
     const lists = typeof cfg.singleRoleLists === 'object' && cfg.singleRoleLists ? cfg.singleRoleLists : {};
     const indices = typeof rule.singleRoleIndices === 'object' && rule.singleRoleIndices ? rule.singleRoleIndices : {};
     const conds = typeof cfg.singleRoleConditions === 'object' && cfg.singleRoleConditions ? cfg.singleRoleConditions : {};
@@ -162,7 +205,7 @@ function predict(nextDays) {
       const pick = arr.length && canShow ? arr[(base + i) % arr.length] : undefined;
       singleMembers[r] = pick ? [pick] : [];
     });
-    out.push({ dateISO, groupIndex: gi, groupName: group.name || '', rolesGroup: rolesAll, groupMembers, rolesSingle: singleRoles, singleMembers });
+    out.push({ dateISO, groupIndex: gi, groupName: group.name || '', rolesGroup: rolesAll, groupMembers, dynStatus, rolesSingle: singleRoles, singleMembers });
   }
   return out;
 }
@@ -179,7 +222,7 @@ const functions = {
     const params = {
       title: '轻松值日',
       eventChannel: EVENT_CHANNEL,
-      subscribeTopics: [EVENT_CHANNEL],
+      subscribeTopics: [EVENT_CHANNEL, 'profiles-selector-channel'],
       callerPluginId: 'duty-easy',
       backgroundUrl: bg,
       floatingUrl: null,
@@ -197,24 +240,23 @@ const functions = {
   },
   showDutyOverlay: async () => {
     ensureDefaults();
-    const list = predict(1);
+    const list = predict(0, 1);
     const today = Array.isArray(list) && list.length ? list[0] : null;
     if (!today) return false;
     const members = [];
     const rs = Array.isArray(today.rolesSingle) ? today.rolesSingle : [];
-    const membersSingle = [];
     rs.forEach((r) => {
       const arr = Array.isArray(today.singleMembers && today.singleMembers[r]) ? today.singleMembers[r] : [];
-      if (arr.length) { membersSingle.push({ role: r, names: arr }); members.push({ role: r, names: arr }); }
+      if (arr.length) { members.push(`${r}: ${arr.join('、')}`); }
     });
     const rg = Array.isArray(today.rolesGroup) ? today.rolesGroup : [];
-    const membersGroup = [];
     rg.forEach((r) => {
       const arr = Array.isArray(today.groupMembers && today.groupMembers[r]) ? today.groupMembers[r] : [];
-      if (arr.length) { membersGroup.push({ role: r, names: arr }); members.push({ role: r, names: arr }); }
+      if (arr.length) { members.push(`${r}: ${arr.join('、')}`); }
     });
-    const props = { title: '今日值日生提醒', date: today.dateISO, group: today.groupName, members: JSON.stringify(members), columns: JSON.stringify(rg), membersGroup: JSON.stringify(membersGroup), membersSingle: JSON.stringify(membersSingle) };
-    await pluginApi.call('notify-plugin', 'overlayComponent', ['notify-overlay', 'component.duty.reminder', props, 120000, true, 3000]);
+    const title = '今日值日生提醒';
+    const subText = `日期：${today.dateISO}\n组别：${today.groupName}\n${members.join('\n')}`;
+    await pluginApi.call('notify-plugin', 'overlay', [title, subText, true, 120000, true, 3000]);
     return true;
   },
   onLowbarEvent: async (payload = {}) => {
@@ -263,7 +305,112 @@ const functions = {
     } catch (e) { return { ok: false, error: e?.message || String(e) }; }
   },
   getPreview: async () => {
-    try { return { ok: true, list: predict(3) }; } catch (e) { return { ok: false, error: e?.message || String(e) }; }
+    try { return { ok: true, list: predict(-2, 8) }; } catch (e) { return { ok: false, error: e?.message || String(e) }; }
+  },
+  offsetGroup: async (payload = {}) => {
+    try {
+      ensureDefaults();
+      const cfg = pluginApi.store.getAll();
+      const groups = Array.isArray(cfg.groups) ? cfg.groups : [];
+      const rule = cfg.rule || {};
+      const delta = payload.delta || 1;
+      const dynRoles = Array.isArray(cfg.dynamicRoles) ? cfg.dynamicRoles : [];
+      const dynActive = typeof rule.dynamicActiveRole === 'object' && rule.dynamicActiveRole ? rule.dynamicActiveRole : {};
+      const dynIdx = typeof rule.dynamicIndices === 'object' && rule.dynamicIndices ? { ...rule.dynamicIndices } : {};
+      const dynamicMode = rule.dynamicMode || 'multi';
+      
+      if (dynamicMode === 'single') {
+        let gi = Number.isFinite(rule.currentGroupIndex) ? rule.currentGroupIndex : 0;
+        const giKey = String(gi);
+        const perIdx = typeof dynIdx[giKey] === 'object' && dynIdx[giKey] ? { ...dynIdx[giKey] } : {};
+        const groupObj = groups[gi] || { roles: {} };
+        
+        let canMoveInGroup = false;
+        dynRoles.forEach((rDyn) => {
+          const perGroupActive = typeof dynActive[giKey] === 'object' && dynActive[giKey] ? dynActive[giKey] : {};
+          const activeRole = String(perGroupActive[rDyn] || '');
+          if (!activeRole) return;
+          const arr = Array.isArray(groupObj.roles?.[activeRole]) ? groupObj.roles[activeRole] : [];
+          if (!arr.length) return;
+          const cur = Number.isFinite(perIdx[rDyn]) ? perIdx[rDyn] : 0;
+          const nextIdx = cur + delta;
+          if (nextIdx >= 0 && nextIdx < arr.length) {
+            canMoveInGroup = true;
+          }
+        });
+        
+        if (canMoveInGroup) {
+          dynRoles.forEach((rDyn) => {
+            const perGroupActive = typeof dynActive[giKey] === 'object' && dynActive[giKey] ? dynActive[giKey] : {};
+            const activeRole = String(perGroupActive[rDyn] || '');
+            if (!activeRole) return;
+            const arr = Array.isArray(groupObj.roles?.[activeRole]) ? groupObj.roles[activeRole] : [];
+            if (!arr.length) return;
+            const cur = Number.isFinite(perIdx[rDyn]) ? perIdx[rDyn] : 0;
+            const nextIdx = cur + delta;
+            if (nextIdx >= 0 && nextIdx < arr.length) {
+              perIdx[rDyn] = nextIdx;
+            }
+          });
+          dynIdx[giKey] = perIdx;
+          const newRule = { ...rule, dynamicIndices: dynIdx };
+          pluginApi.store.set('rule', newRule);
+        } else {
+          const len = groups.length || 1;
+          const newGi = ((gi + delta) % len + len) % len;
+          const newGiKey = String(newGi);
+          const newPerIdx = typeof dynIdx[newGiKey] === 'object' && dynIdx[newGiKey] ? { ...dynIdx[newGiKey] } : {};
+          
+          dynRoles.forEach((rDyn) => {
+            const perGroupActive = typeof dynActive[newGiKey] === 'object' && dynActive[newGiKey] ? dynActive[newGiKey] : {};
+            const activeRole = String(perGroupActive[rDyn] || '');
+            if (!activeRole) return;
+            const newGroupObj = groups[newGi] || { roles: {} };
+            const arr = Array.isArray(newGroupObj.roles?.[activeRole]) ? newGroupObj.roles[activeRole] : [];
+            if (!arr.length) return;
+            newPerIdx[rDyn] = delta > 0 ? 0 : arr.length - 1;
+          });
+          
+          dynIdx[newGiKey] = newPerIdx;
+          const newRule = { ...rule, currentGroupIndex: newGi, dynamicIndices: dynIdx };
+          pluginApi.store.set('rule', newRule);
+        }
+      } else {
+        let gi = Number.isFinite(rule.currentGroupIndex) ? rule.currentGroupIndex : 0;
+        const len = groups.length || 1;
+        gi = ((gi + delta) % len + len) % len;
+        const newRule = { ...rule, currentGroupIndex: gi };
+        pluginApi.store.set('rule', newRule);
+      }
+      return { ok: true };
+    } catch (e) { return { ok: false, error: e?.message || String(e) }; }
+  },
+  offsetSingle: async (payload = {}) => {
+    try {
+      ensureDefaults();
+      const cfg = pluginApi.store.getAll();
+      const rule = cfg.rule || {};
+      const roles = Array.isArray(cfg.singleRoles) ? cfg.singleRoles : (Array.isArray(cfg.roles) ? cfg.roles : []);
+      const lists = typeof cfg.singleRoleLists === 'object' && cfg.singleRoleLists ? cfg.singleRoleLists : {};
+      const indices = typeof rule.singleRoleIndices === 'object' && rule.singleRoleIndices ? { ...rule.singleRoleIndices } : {};
+      const delta = payload.delta || 1;
+      roles.forEach(r => {
+        const arr = Array.isArray(lists[r]) ? lists[r] : [];
+        if (!arr.length) return;
+        const cur = Number.isFinite(indices[r]) ? indices[r] : 0;
+        indices[r] = ((cur + delta) % arr.length + arr.length) % arr.length;
+      });
+      const newRule = { ...rule, singleRoleIndices: indices };
+      pluginApi.store.set('rule', newRule);
+      return { ok: true };
+    } catch (e) { return { ok: false, error: e?.message || String(e) }; }
+  },
+  offsetAll: async (payload = {}) => {
+    try {
+      await functions.offsetGroup(payload);
+      await functions.offsetSingle(payload);
+      return { ok: true };
+    } catch (e) { return { ok: false, error: e?.message || String(e) }; }
   }
 };
 

@@ -7,16 +7,166 @@
     <link rel="stylesheet" href="../../../renderer/remixicon-local.css" />
     <link rel="stylesheet" href="../../../renderer/settings.css" />
     <style>
-      html, body { height: 100%; }
-      body { margin: 0; overflow: auto; }
-      .section { padding: 16px; background: transparent !important; border: none !important; }
-      .list { display: flex; flex-direction: column; gap: 8px; }
-      .item { display: flex; gap: 8px; align-items: center; }
-      .label { width: 120px; color: var(--muted); }
-      select { flex: 1; padding: 6px 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.06); color: var(--fg); }
-      .mode { display: flex; gap: 8px; align-items: center; }
-      .btn { padding: 6px 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.06); color: var(--fg); cursor: pointer; }
-      .actions { display: flex; gap: 8px; margin-top: 8px; }
+      :root {
+        --bg: #181818;
+        --fg: #e6e6e6;
+        --muted: #aaa;
+        --accent: #6ab4ff;
+        --accent-rgb: 106, 180, 255;
+        --panel: rgba(255, 255, 255, 0.04);
+        --item-bg: rgba(255, 255, 255, 0.04);
+        --border: #2a2a2a;
+      }
+      
+      html, body {
+        height: 100%;
+        user-select: none;
+        transition: background 0.3s, color 0.3s;
+      }
+      
+      body {
+        margin: 0;
+        font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Microsoft YaHei", sans-serif;
+        background: var(--bg);
+        color: var(--fg);
+        overflow-y: auto;
+      }
+      
+      /* 全局滚动条样式 */
+      body::-webkit-scrollbar {
+        width: 10px;
+        height: 10px;
+      }
+      
+      body::-webkit-scrollbar-track {
+        background: var(--item-bg);
+        border-left: 1px solid var(--border);
+      }
+      
+      body::-webkit-scrollbar-thumb {
+        background: var(--border);
+        border: 1px solid var(--bg);
+        border-radius: 999px;
+      }
+      
+      body::-webkit-scrollbar-thumb:hover {
+        background: var(--muted);
+      }
+      
+      .section {
+        margin: 20px;
+        padding: 16px;
+        background: var(--panel) !important;
+        border: 1px solid var(--border) !important;
+        border-radius: 12px;
+        animation: fadeInUp 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+      }
+      
+      @keyframes fadeInUp {
+        from {
+          opacity: 0;
+          transform: translateY(30px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      
+      .section-title {
+        font-weight: 600;
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        color: var(--fg);
+      }
+      
+      .list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      
+      .item {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        padding: 12px;
+        border: 1px solid var(--border);
+        background: var(--item-bg);
+        border-radius: 8px;
+        transition: border-color 0.2s ease, background 0.2s ease;
+      }
+      
+      .item:hover {
+        border-color: rgba(var(--accent-rgb), 0.45);
+        background: rgba(var(--accent-rgb), 0.08);
+      }
+      
+      .label {
+        width: 140px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+      
+      select {
+        flex: 1;
+        padding: 8px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: var(--item-bg);
+        color: var(--fg);
+        transition: border-color 0.2s ease;
+      }
+      
+      select:focus {
+        outline: none;
+        border-color: var(--accent);
+      }
+      
+      select option {
+        background: var(--bg);
+        color: var(--fg);
+      }
+      
+      select option:hover {
+        background: rgba(var(--accent-rgb), 0.15);
+      }
+      
+      select option:checked {
+        background: rgba(var(--accent-rgb), 0.25);
+        color: var(--fg);
+      }
+      
+      .mode {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+      }
+      
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        border: none;
+        border-radius: 6px;
+        padding: 8px 12px;
+        cursor: pointer;
+        background: var(--accent);
+        color: #fff;
+        transition: background 0.2s ease;
+      }
+      
+      .btn:hover {
+        background: #1a8f46;
+      }
+      
+      .actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 16px;
+      }
     </style>
   </head>
   <body>
@@ -30,6 +180,13 @@
             <option value="weekday">按照星期对应组别</option>
           </select>
         </div>
+        <div class="item mode">
+          <span class="label">动态分工轮值模式</span>
+          <select id="dynamicMode">
+            <option value="multi">多组顺序轮值（按组依次轮换）</option>
+            <option value="single">单组连续轮值（同一组内成员连续轮值）</option>
+          </select>
+        </div>
         <div id="weekBox"></div>
       </div>
       <div class="actions">
@@ -37,7 +194,60 @@
       </div>
     </div>
     <script>
-      let channel=''; let cfg={ rule:{ mode:'list', weekdayMap:{}, currentGroupIndex:0, currentRotationIndex:0 }, groups:[] };
+      // --- Theme Logic ---
+      window.applyTheme = (mode, color) => {
+        const root = document.documentElement;
+        const isDark = mode === 'dark' || (mode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        const accent = color || '#6ab4ff';
+        root.style.setProperty('--accent', accent);
+        root.style.setProperty('--accent-rgb', accent.replace('#', '').match(/.{2}/g).map(hex => parseInt(hex, 16)).join(','));
+        
+        if (isDark) {
+          root.style.setProperty('--bg', '#181818');
+          root.style.setProperty('--fg', '#e6e6e6');
+          root.style.setProperty('--muted', '#aaa');
+          root.style.setProperty('--panel', 'rgba(255, 255, 255, 0.04)');
+          root.style.setProperty('--item-bg', 'rgba(255, 255, 255, 0.04)');
+          root.style.setProperty('--border', '#2a2a2a');
+        } else {
+          root.style.setProperty('--bg', '#ffffff');
+          root.style.setProperty('--fg', '#333333');
+          root.style.setProperty('--muted', '#666666');
+          root.style.setProperty('--panel', 'rgba(0, 0, 0, 0.04)');
+          root.style.setProperty('--item-bg', 'rgba(0, 0, 0, 0.04)');
+          root.style.setProperty('--border', '#e0e0e0');
+        }
+      };
+
+      (async () => {
+        try {
+          if (window.lowbarAPI?.configGet) {
+            const mode = await window.lowbarAPI.configGet('system', 'themeMode') || 'system';
+            const color = await window.lowbarAPI.configGet('system', 'themeColor') || '#6ab4ff';
+            window.applyTheme(mode, color);
+          }
+          if (window.lowbarAPI?.onConfigChanged) {
+            window.lowbarAPI.onConfigChanged(({ scope, key, value }) => {
+              if (scope === 'system') {
+                 (async () => {
+                   const m = await window.lowbarAPI.configGet('system', 'themeMode') || 'system';
+                   const c = await window.lowbarAPI.configGet('system', 'themeColor') || '#6ab4ff';
+                   window.applyTheme(m, c);
+                 })();
+              }
+            });
+          }
+          window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', async () => {
+             const m = await window.lowbarAPI.configGet('system', 'themeMode') || 'system';
+             if (m === 'system') {
+                const c = await window.lowbarAPI.configGet('system', 'themeColor') || '#6ab4ff';
+                window.applyTheme('system', c);
+             }
+          });
+        } catch (e) { console.error('Theme init failed', e); }
+      })();
+
+      let channel=''; let cfg={ rule:{ mode:'list', weekdayMap:{}, currentGroupIndex:0, currentRotationIndex:0, dynamicMode: 'multi' }, groups:[] };
       async function load(){ try {
         if (window.lowbarAPI?.pluginCall) {
             const res=await window.lowbarAPI.pluginCall('duty-easy','getConfig'); const r=res?.result||res; cfg=r?.config||{};
@@ -47,9 +257,10 @@
             await window.pluginAPI.configEnsureDefaults('duty-easy',{}); const all=await window.pluginAPI.configGetAll('duty-easy'); cfg=all||{};
           }
       } catch (e) {}
-        if(!cfg.rule) cfg.rule={ mode:'list', weekdayMap:{}, currentGroupIndex:0, currentRotationIndex:0 };
+        if(!cfg.rule) cfg.rule={ mode:'list', weekdayMap:{}, currentGroupIndex:0, currentRotationIndex:0, dynamicMode: 'multi' };
         if(!Array.isArray(cfg.groups)) cfg.groups=[];
         document.getElementById('mode').value=String(cfg.rule.mode||'list');
+        document.getElementById('dynamicMode').value=String(cfg.rule.dynamicMode||'multi');
         renderWeek()
       }
       function renderWeek(){ const mode=document.getElementById('mode').value; const box=document.getElementById('weekBox'); box.innerHTML=''; if(mode!=='weekday') return; const names=(cfg.groups||[]).map(g=>String(g?.name||'').trim()).filter(Boolean); const map=cfg.rule.weekdayMap||{}; const labels=['周日','周一','周二','周三','周四','周五','周六']; for(let i=0;i<7;i++){ const wrap=document.createElement('div'); wrap.className='item'; const lab=document.createElement('span'); lab.className='label'; lab.textContent=labels[i]; const sel=document.createElement('select'); if(names.length===0){ const op=document.createElement('option'); op.value='0'; op.textContent='未设置组'; sel.appendChild(op) } else { names.forEach((n,gi)=>{ const op=document.createElement('option'); op.value=String(gi); op.textContent=n; sel.appendChild(op) }) } const cur=Number.isFinite(map[i])?map[i]:0; sel.value=String(cur); sel.addEventListener('change',()=>{ cfg.rule.weekdayMap[i]=parseInt(sel.value,10) }); wrap.appendChild(lab); wrap.appendChild(sel); box.appendChild(wrap) } }
@@ -57,7 +268,9 @@
       async function save(){
         try {
           const mode = document.getElementById('mode').value;
+          const dynamicMode = document.getElementById('dynamicMode').value;
           cfg.rule.mode = mode;
+          cfg.rule.dynamicMode = dynamicMode;
           if (window.lowbarAPI?.pluginCall) {
             await window.lowbarAPI.pluginCall('duty-easy','saveConfig',[{ rule: cfg.rule }]);
           } else if (window.lowbarAPI?.configSet) {
